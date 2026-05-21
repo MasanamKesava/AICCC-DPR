@@ -14,16 +14,151 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      dpr_entries: {
+        Row: {
+          action_required: string | null
+          activity_type: string | null
+          category: Database["public"]["Enums"]["ticket_category"]
+          created_at: string
+          created_by: string | null
+          department: string
+          description: string
+          entry_date: string
+          id: string
+          issues_noticed: string | null
+          location: string | null
+          output_evidence: string | null
+          person_responsible: string | null
+          priority: Database["public"]["Enums"]["dpr_priority"]
+          project_name: string
+          session: string | null
+          status: Database["public"]["Enums"]["dpr_status"]
+          updated_at: string
+          vendor: string | null
+        }
+        Insert: {
+          action_required?: string | null
+          activity_type?: string | null
+          category: Database["public"]["Enums"]["ticket_category"]
+          created_at?: string
+          created_by?: string | null
+          department: string
+          description: string
+          entry_date?: string
+          id?: string
+          issues_noticed?: string | null
+          location?: string | null
+          output_evidence?: string | null
+          person_responsible?: string | null
+          priority?: Database["public"]["Enums"]["dpr_priority"]
+          project_name?: string
+          session?: string | null
+          status?: Database["public"]["Enums"]["dpr_status"]
+          updated_at?: string
+          vendor?: string | null
+        }
+        Update: {
+          action_required?: string | null
+          activity_type?: string | null
+          category?: Database["public"]["Enums"]["ticket_category"]
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          description?: string
+          entry_date?: string
+          id?: string
+          issues_noticed?: string | null
+          location?: string | null
+          output_evidence?: string | null
+          person_responsible?: string | null
+          priority?: Database["public"]["Enums"]["dpr_priority"]
+          project_name?: string
+          session?: string | null
+          status?: Database["public"]["Enums"]["dpr_status"]
+          updated_at?: string
+          vendor?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          department: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "admin"
+        | "project_manager"
+        | "coordinator"
+        | "pmc"
+        | "field_engineer"
+        | "viewer"
+      dpr_priority: "low" | "medium" | "high" | "critical"
+      dpr_status: "open" | "in_progress" | "escalated" | "resolved" | "closed"
+      ticket_category:
+        | "rfi"
+        | "worklog"
+        | "drawing"
+        | "hindrance"
+        | "labour"
+        | "machinery"
+        | "grievance"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +285,26 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "admin",
+        "project_manager",
+        "coordinator",
+        "pmc",
+        "field_engineer",
+        "viewer",
+      ],
+      dpr_priority: ["low", "medium", "high", "critical"],
+      dpr_status: ["open", "in_progress", "escalated", "resolved", "closed"],
+      ticket_category: [
+        "rfi",
+        "worklog",
+        "drawing",
+        "hindrance",
+        "labour",
+        "machinery",
+        "grievance",
+      ],
+    },
   },
 } as const
