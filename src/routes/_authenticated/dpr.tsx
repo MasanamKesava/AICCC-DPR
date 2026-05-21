@@ -171,7 +171,7 @@ function NewEntryDialog({ onClose, userId }: { onClose: () => void; userId: stri
   const qc = useQueryClient();
   const [form, setForm] = useState({
     entry_date: format(new Date(), "yyyy-MM-dd"),
-    department: DEPARTMENTS[0],
+    department: DEPARTMENTS[0] as string,
     category: "rfi" as DprEntry["category"],
     description: "",
     vendor: "",
