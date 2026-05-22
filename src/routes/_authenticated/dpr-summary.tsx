@@ -203,7 +203,7 @@ function DprSummary() {
         </div>
       </div>
 
-      <div ref={printRef} className="space-y-4">
+      <div className="space-y-4">
         {/* Report header band */}
         <div className="overflow-hidden rounded-lg border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-2 bg-[hsl(var(--sidebar-background))] px-5 py-3 text-sidebar-foreground">
