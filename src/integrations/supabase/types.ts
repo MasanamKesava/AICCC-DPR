@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      absentees: {
+        Row: {
+          absent_date: string
+          created_at: string
+          created_by: string | null
+          department: string | null
+          designation: string | null
+          employee_name: string
+          id: string
+          remarks: string | null
+          updated_at: string
+        }
+        Insert: {
+          absent_date?: string
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          designation?: string | null
+          employee_name: string
+          id?: string
+          remarks?: string | null
+          updated_at?: string
+        }
+        Update: {
+          absent_date?: string
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          designation?: string | null
+          employee_name?: string
+          id?: string
+          remarks?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dpr_entries: {
         Row: {
           action_required: string | null
@@ -107,6 +143,48 @@ export type Database = {
         }
         Relationships: []
       }
+      recorded_by: {
+        Row: {
+          created_at: string
+          department: string | null
+          designation: string | null
+          dpr_date: string
+          id: string
+          name: string
+          recorded_at: string
+          role: Database["public"]["Enums"]["recorder_role"]
+          signature_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          dpr_date?: string
+          id?: string
+          name: string
+          recorded_at?: string
+          role?: Database["public"]["Enums"]["recorder_role"]
+          signature_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          dpr_date?: string
+          id?: string
+          name?: string
+          recorded_at?: string
+          role?: Database["public"]["Enums"]["recorder_role"]
+          signature_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -151,6 +229,7 @@ export type Database = {
         | "viewer"
       dpr_priority: "low" | "medium" | "high" | "critical"
       dpr_status: "open" | "in_progress" | "escalated" | "resolved" | "closed"
+      recorder_role: "prepared_by" | "reviewed_by" | "approved_by"
       ticket_category:
         | "rfi"
         | "worklog"
@@ -296,6 +375,7 @@ export const Constants = {
       ],
       dpr_priority: ["low", "medium", "high", "critical"],
       dpr_status: ["open", "in_progress", "escalated", "resolved", "closed"],
+      recorder_role: ["prepared_by", "reviewed_by", "approved_by"],
       ticket_category: [
         "rfi",
         "worklog",
