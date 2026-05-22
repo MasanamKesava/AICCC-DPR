@@ -28,7 +28,7 @@ function DprSummary() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const printRef = useRef<HTMLDivElement>(null);
+  
 
   const { data: entries = [] } = useQuery({
     queryKey: ["dpr-summary-entries", date],
