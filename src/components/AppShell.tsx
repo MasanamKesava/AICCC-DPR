@@ -62,7 +62,7 @@ function AppSidebar() {
                     <SidebarMenuButton asChild isActive={active} tooltip={n.label}>
                       <Link to={n.to}>
                         <n.icon className="h-4 w-4" />
-                        <span>{n.label}</span>
+                        <span className="whitespace-nowrap">{n.label}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

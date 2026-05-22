@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/contexts/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Activity, BarChart3, FileText, Shield, Workflow, Building2 } from "lucide-react";
@@ -10,7 +10,8 @@ export const Route = createFileRoute("/")({
 function Landing() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (user) return <Navigate to="/dashboard" />;
+  const appLink = user ? "/dashboard" : "/auth";
+  const appAction = user ? "Open dashboard" : "Sign in";
 
   return (
     <div className="min-h-screen bg-background">
@@ -25,7 +26,7 @@ function Landing() {
               <p className="text-xs text-muted-foreground leading-tight">DPR Management</p>
             </div>
           </div>
-          <Link to="/auth"><Button>Sign in</Button></Link>
+          <Link to={appLink}><Button>{appAction}</Button></Link>
         </div>
       </header>
 
@@ -43,8 +44,8 @@ function Landing() {
             A centralized platform to track RFIs, worklogs, drawings, hindrances and department progress across every site — one source of truth for the project.
           </p>
           <div className="mt-8 flex justify-center gap-3">
-            <Link to="/auth"><Button size="lg">Get started</Button></Link>
-            <Link to="/auth"><Button size="lg" variant="outline">Sign in</Button></Link>
+            <Link to={appLink}><Button size="lg">{appAction}</Button></Link>
+            {!user && <Link to="/auth"><Button size="lg" variant="outline">Sign in</Button></Link>}
           </div>
         </div>
       </section>

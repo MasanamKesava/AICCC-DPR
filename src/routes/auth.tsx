@@ -27,7 +27,7 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
 
   if (loading) return null;
-  if (user) return <Navigate to="/dashboard" />;
+  if (user) return <Navigate to="/" />;
 
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +38,7 @@ function AuthPage() {
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Welcome back");
-    navigate({ to: "/dashboard" });
+    navigate({ to: "/" });
   };
 
   const signUp = async (e: React.FormEvent) => {
@@ -49,7 +49,7 @@ function AuthPage() {
     const { error } = await supabase.auth.signUp({
       email, password,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        emailRedirectTo: `${window.location.origin}/`,
         data: { full_name: fullName },
       },
     });

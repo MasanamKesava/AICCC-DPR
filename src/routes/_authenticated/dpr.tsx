@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/dpr")({ component: DprPage
 const entrySchema = z.object({
   entry_date: z.string(),
   department: z.string().min(1),
-  category: z.enum(["rfi", "worklog", "drawing", "hindrance", "labour", "machinery", "grievance"]),
+  category: z.enum(["rfi", "worklog", "drawing", "hindrance", "labour", "machinery", "grievance", "bim", "cctv", "drone", "logs"]),
   description: z.string().trim().min(3).max(2000),
   vendor: z.string().max(150).optional(),
   location: z.string().max(150).optional(),

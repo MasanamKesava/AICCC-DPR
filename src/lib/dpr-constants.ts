@@ -18,6 +18,10 @@ export const CATEGORIES = [
   { value: "labour", label: "Labour" },
   { value: "machinery", label: "Machinery" },
   { value: "grievance", label: "Grievance" },
+  { value: "bim", label: "BIM" },
+  { value: "cctv", label: "CCTV" },
+  { value: "drone", label: "Drone" },
+  { value: "logs", label: "Logs" },
 ] as const;
 
 export const STATUSES = [
@@ -42,7 +46,7 @@ export type DprEntry = {
   vendor: string | null;
   location: string | null;
   department: string;
-  category: "rfi" | "worklog" | "drawing" | "hindrance" | "labour" | "machinery" | "grievance";
+  category: "rfi" | "worklog" | "drawing" | "hindrance" | "labour" | "machinery" | "grievance" | "bim" | "cctv" | "drone" | "logs";
   activity_type: string | null;
   description: string;
   person_responsible: string | null;
