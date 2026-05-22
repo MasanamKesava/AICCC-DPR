@@ -13,10 +13,12 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
+import { Route as AuthenticatedDprSummaryRouteImport } from './routes/_authenticated/dpr-summary'
 import { Route as AuthenticatedDprRouteImport } from './routes/_authenticated/dpr'
 import { Route as AuthenticatedDepartmentsRouteImport } from './routes/_authenticated/departments'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as AuthenticatedAbsenteesRouteImport } from './routes/_authenticated/absentees'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -35,6 +37,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedDprSummaryRoute = AuthenticatedDprSummaryRouteImport.update({
+  id: '/dpr-summary',
+  path: '/dpr-summary',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDprRoute = AuthenticatedDprRouteImport.update({
@@ -58,23 +65,32 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAbsenteesRoute = AuthenticatedAbsenteesRouteImport.update({
+  id: '/absentees',
+  path: '/absentees',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/absentees': typeof AuthenticatedAbsenteesRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/departments': typeof AuthenticatedDepartmentsRoute
   '/dpr': typeof AuthenticatedDprRoute
+  '/dpr-summary': typeof AuthenticatedDprSummaryRoute
   '/reports': typeof AuthenticatedReportsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/absentees': typeof AuthenticatedAbsenteesRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/departments': typeof AuthenticatedDepartmentsRoute
   '/dpr': typeof AuthenticatedDprRoute
+  '/dpr-summary': typeof AuthenticatedDprSummaryRoute
   '/reports': typeof AuthenticatedReportsRoute
 }
 export interface FileRoutesById {
@@ -82,10 +98,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/absentees': typeof AuthenticatedAbsenteesRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/departments': typeof AuthenticatedDepartmentsRoute
   '/_authenticated/dpr': typeof AuthenticatedDprRoute
+  '/_authenticated/dpr-summary': typeof AuthenticatedDprSummaryRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
 }
 export interface FileRouteTypes {
@@ -93,29 +111,35 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/absentees'
     | '/analytics'
     | '/dashboard'
     | '/departments'
     | '/dpr'
+    | '/dpr-summary'
     | '/reports'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/absentees'
     | '/analytics'
     | '/dashboard'
     | '/departments'
     | '/dpr'
+    | '/dpr-summary'
     | '/reports'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/absentees'
     | '/_authenticated/analytics'
     | '/_authenticated/dashboard'
     | '/_authenticated/departments'
     | '/_authenticated/dpr'
+    | '/_authenticated/dpr-summary'
     | '/_authenticated/reports'
   fileRoutesById: FileRoutesById
 }
@@ -155,6 +179,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/dpr-summary': {
+      id: '/_authenticated/dpr-summary'
+      path: '/dpr-summary'
+      fullPath: '/dpr-summary'
+      preLoaderRoute: typeof AuthenticatedDprSummaryRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/dpr': {
       id: '/_authenticated/dpr'
       path: '/dpr'
@@ -183,22 +214,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/absentees': {
+      id: '/_authenticated/absentees'
+      path: '/absentees'
+      fullPath: '/absentees'
+      preLoaderRoute: typeof AuthenticatedAbsenteesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAbsenteesRoute: typeof AuthenticatedAbsenteesRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDepartmentsRoute: typeof AuthenticatedDepartmentsRoute
   AuthenticatedDprRoute: typeof AuthenticatedDprRoute
+  AuthenticatedDprSummaryRoute: typeof AuthenticatedDprSummaryRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAbsenteesRoute: AuthenticatedAbsenteesRoute,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDepartmentsRoute: AuthenticatedDepartmentsRoute,
   AuthenticatedDprRoute: AuthenticatedDprRoute,
+  AuthenticatedDprSummaryRoute: AuthenticatedDprSummaryRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
 }
 
@@ -214,3 +256,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
