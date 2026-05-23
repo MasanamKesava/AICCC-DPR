@@ -69,14 +69,14 @@ function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4" style={{ backgroundImage: "var(--gradient-hero)", backgroundSize: "100% 200px", backgroundRepeat: "no-repeat" }}>
+    <main className="flex min-h-screen items-center justify-center bg-background px-4" style={{ backgroundImage: "var(--gradient-hero)", backgroundSize: "100% 200px", backgroundRepeat: "no-repeat" }}>
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-elevated)]">
         <div className="mb-6 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Building2 className="h-5 w-5" />
+            <Building2 className="h-5 w-5" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="font-semibold leading-tight">AICCC DPR</h1>
+            <h1 className="font-semibold leading-tight">AICCC DPR — Sign In</h1>
             <p className="text-xs text-muted-foreground leading-tight">Sign in to your account</p>
           </div>
         </div>
@@ -89,22 +89,22 @@ function AuthPage() {
 
           <TabsContent value="signin">
             <form onSubmit={signIn} className="space-y-3 pt-4">
-              <div><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-              <div><Label>Password</Label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
+              <div><Label htmlFor="signin-email">Email</Label><Input id="signin-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+              <div><Label htmlFor="signin-password">Password</Label><Input id="signin-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
               <Button type="submit" className="w-full" disabled={busy}>{busy ? "Signing in..." : "Sign in"}</Button>
             </form>
           </TabsContent>
 
           <TabsContent value="signup">
             <form onSubmit={signUp} className="space-y-3 pt-4">
-              <div><Label>Full name</Label><Input value={fullName} onChange={(e) => setFullName(e.target.value)} required /></div>
-              <div><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-              <div><Label>Password</Label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
+              <div><Label htmlFor="signup-name">Full name</Label><Input id="signup-name" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} required /></div>
+              <div><Label htmlFor="signup-email">Email</Label><Input id="signup-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+              <div><Label htmlFor="signup-password">Password</Label><Input id="signup-password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
               <Button type="submit" className="w-full" disabled={busy}>{busy ? "Creating..." : "Create account"}</Button>
             </form>
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </main>
   );
 }
