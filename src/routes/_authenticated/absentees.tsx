@@ -18,6 +18,15 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Plus, Trash2, Search } from "lucide-react";
+import { z } from "zod";
+
+const absenteeSchema = z.object({
+  employee_name: z.string().trim().min(1, "Name required").max(150),
+  department: z.string().trim().max(100).optional(),
+  designation: z.string().trim().max(100).optional(),
+  absent_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
+  remarks: z.string().trim().max(500).optional(),
+});
 
 export const Route = createFileRoute("/_authenticated/absentees")({ component: AbsenteesPage });
 
