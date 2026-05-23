@@ -24,6 +24,15 @@ import {
 import { Printer, FileDown, Plus, Trash2, Upload } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, Tooltip } from "recharts";
 import { CATEGORIES, DEPARTMENTS, type DprEntry } from "@/lib/dpr-constants";
+import { z } from "zod";
+
+const absenteeSchema = z.object({
+  employee_name: z.string().trim().min(1, "Name required").max(150),
+  department: z.string().trim().max(100).optional(),
+  designation: z.string().trim().max(100).optional(),
+  absent_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
+  remarks: z.string().trim().max(500).optional(),
+});
 
 export const Route = createFileRoute("/_authenticated/dpr-summary")({ component: DprSummary });
 
@@ -849,10 +858,16 @@ function AbsenteesCard({
 
   const addMut = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("absentees").insert({
+      const parsed = absenteeSchema.safeParse({
         employee_name: name,
-        department: dept || null,
+        department: dept || undefined,
         absent_date: date,
+      });
+      if (!parsed.success) throw new Error(parsed.error.issues[0].message);
+      const { error } = await supabase.from("absentees").insert({
+        employee_name: parsed.data.employee_name,
+        department: parsed.data.department ?? null,
+        absent_date: parsed.data.absent_date,
         created_by: userId,
       });
       if (error) throw error;
