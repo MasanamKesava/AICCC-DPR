@@ -49,23 +49,6 @@ function AuthPage() {
     navigate({ to: "/" });
   };
 
-  const signUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const parsed = schema.safeParse({ email, password, full_name: fullName });
-    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
-    setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email, password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: { full_name: fullName },
-      },
-    });
-    setBusy(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Account created. Check your email to confirm, then sign in.");
-  };
-
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4" style={{ backgroundImage: "var(--gradient-hero)", backgroundSize: "100% 200px", backgroundRepeat: "no-repeat" }}>
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-[var(--shadow-elevated)]">
@@ -75,33 +58,19 @@ function AuthPage() {
           </div>
           <div>
             <h1 className="font-semibold leading-tight">AICCC DPR — Sign In</h1>
-            <p className="text-xs text-muted-foreground leading-tight">Sign in to your account</p>
+            <p className="text-xs text-muted-foreground leading-tight">Authorized personnel only</p>
           </div>
         </div>
 
-        <Tabs defaultValue="signin">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signin">Sign in</TabsTrigger>
-            <TabsTrigger value="signup">Sign up</TabsTrigger>
-          </TabsList>
+        <form onSubmit={signIn} className="space-y-3 pt-2">
+          <div><Label htmlFor="signin-email">Email</Label><Input id="signin-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+          <div><Label htmlFor="signin-password">Password</Label><Input id="signin-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
+          <Button type="submit" className="w-full" disabled={busy}>{busy ? "Signing in..." : "Sign in"}</Button>
+        </form>
 
-          <TabsContent value="signin">
-            <form onSubmit={signIn} className="space-y-3 pt-4">
-              <div><Label htmlFor="signin-email">Email</Label><Input id="signin-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-              <div><Label htmlFor="signin-password">Password</Label><Input id="signin-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
-              <Button type="submit" className="w-full" disabled={busy}>{busy ? "Signing in..." : "Sign in"}</Button>
-            </form>
-          </TabsContent>
-
-          <TabsContent value="signup">
-            <form onSubmit={signUp} className="space-y-3 pt-4">
-              <div><Label htmlFor="signup-name">Full name</Label><Input id="signup-name" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} required /></div>
-              <div><Label htmlFor="signup-email">Email</Label><Input id="signup-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-              <div><Label htmlFor="signup-password">Password</Label><Input id="signup-password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
-              <Button type="submit" className="w-full" disabled={busy}>{busy ? "Creating..." : "Create account"}</Button>
-            </form>
-          </TabsContent>
-        </Tabs>
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          Access is invite-only. Contact your administrator to request an account.
+        </p>
       </div>
     </main>
   );
