@@ -10,7 +10,17 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2 } from "lucide-react";
 
-export const Route = createFileRoute("/auth")({ component: AuthPage });
+export const Route = createFileRoute("/auth")({
+  component: AuthPage,
+  head: () => ({
+    meta: [
+      { title: "Sign in — AICCC DPR Management System" },
+      { name: "description", content: "Sign in or request access to the AICCC DPR Management System to record and review Daily Progress Reports." },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+    links: [{ rel: "canonical", href: "https://aiccc-pulse.lovable.app/auth" }],
+  }),
+});
 
 const schema = z.object({
   email: z.string().email("Invalid email").max(255),

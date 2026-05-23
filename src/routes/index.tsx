@@ -3,8 +3,24 @@ import { useAuth } from "@/contexts/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Activity, BarChart3, FileText, Shield, Workflow, Building2 } from "lucide-react";
 
+const OG_IMAGE = "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ca408d60-0114-48cd-a23b-832d10d95c02/id-preview-2415bf7c--50abdf37-baa6-4b34-9d4b-68bdf842b1b2.lovable.app-1779434895215.png";
+
 export const Route = createFileRoute("/")({
   component: Landing,
+  head: () => ({
+    meta: [
+      { title: "AICCC DPR Management System — Smart City Infrastructure Command Center" },
+      { name: "description", content: "Track RFIs, worklogs, drawings, hindrances and department progress across every AICCC site from one unified Daily Progress Report platform." },
+      { property: "og:title", content: "AICCC DPR Management System" },
+      { property: "og:description", content: "Track RFIs, worklogs, drawings, hindrances and department progress across every AICCC site from one unified Daily Progress Report platform." },
+      { property: "og:url", content: "https://aiccc-pulse.lovable.app/" },
+      { property: "og:image", content: OG_IMAGE },
+      { name: "twitter:title", content: "AICCC DPR Management System" },
+      { name: "twitter:description", content: "Track RFIs, worklogs, drawings, hindrances and department progress across every AICCC site." },
+      { name: "twitter:image", content: OG_IMAGE },
+    ],
+    links: [{ rel: "canonical", href: "https://aiccc-pulse.lovable.app/" }],
+  }),
 });
 
 function Landing() {
