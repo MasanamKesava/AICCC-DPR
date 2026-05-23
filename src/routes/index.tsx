@@ -66,24 +66,27 @@ function Landing() {
         </div>
       </section>
 
-      <section className="container mx-auto px-4 pb-24">
-        <div className="grid gap-6 md:grid-cols-3">
-          {[
-            { icon: FileText, title: "DPR Entry", desc: "Capture every site activity by department, category and session." },
-            { icon: BarChart3, title: "Live Dashboard", desc: "Ticket aging, SLA breaches and department performance at a glance." },
-            { icon: Workflow, title: "Department Summary", desc: "RFI, worklog, drawing and hindrance counts auto-aggregated daily." },
-            { icon: Activity, title: "Trends & Analytics", desc: "Daily and weekly trend charts powered by Recharts." },
-            { icon: Shield, title: "Role-based Access", desc: "Admin, PM, Coordinator, PMC, Field Engineer and Viewer roles." },
-            { icon: FileText, title: "PDF & Excel Reports", desc: "Government-style exportable DPRs for any date range." },
-          ].map((f) => (
-            <div key={f.title} className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
-              <f.icon className="h-8 w-8 text-accent" />
-              <h3 className="mt-4 font-semibold">{f.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <main>
+        <section className="container mx-auto px-4 pb-24">
+          <h2 className="mb-8 text-center text-3xl font-bold tracking-tight">Everything you need to run the daily report</h2>
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              { icon: FileText, title: "DPR Entry", desc: "Capture every site activity by department, category and session." },
+              { icon: BarChart3, title: "Live Dashboard", desc: "Ticket aging, SLA breaches and department performance at a glance." },
+              { icon: Workflow, title: "Department Summary", desc: "RFI, worklog, drawing and hindrance counts auto-aggregated daily." },
+              { icon: Activity, title: "Trends & Analytics", desc: "Daily and weekly trend charts powered by Recharts." },
+              { icon: Shield, title: "Role-based Access", desc: "Admin, PM, Coordinator, PMC, Field Engineer and Viewer roles." },
+              { icon: FileText, title: "PDF & Excel Reports", desc: "Government-style exportable DPRs for any date range." },
+            ].map((f) => (
+              <div key={f.title} className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
+                <f.icon className="h-8 w-8 text-accent" aria-hidden="true" />
+                <h3 className="mt-4 font-semibold">{f.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
