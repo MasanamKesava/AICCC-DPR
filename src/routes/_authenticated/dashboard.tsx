@@ -208,6 +208,37 @@ function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Grand Total Summary — mirrors DPR Summary & printable PDF */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-base">Grand Total Summary (Today)</CardTitle>
+          <span className="text-xs text-muted-foreground">
+            Total {grandTotal.total} · {grandTotal.completed} done · {grandTotal.inProgress} wip ·{" "}
+            {grandTotal.delayed} delayed
+          </span>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={sectionStats.map((s) => ({ name: s.title, ...s }))}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="name" fontSize={12} />
+              <YAxis fontSize={12} allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="completed" stackId="a" fill="hsl(var(--success))" name="Completed" />
+              <Bar dataKey="inProgress" stackId="a" fill="hsl(var(--warning))" name="In Progress" />
+              <Bar dataKey="delayed" stackId="a" fill="hsl(var(--destructive))" name="Delayed" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
     </div>
+  );
+}
+
+// Keep ROW_SECTIONS imported to ensure shared mapping is referenced;
+// the values feed sectionStats above.
+void ROW_SECTIONS;
   );
 }
