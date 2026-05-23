@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /auth
+Disallow: /dashboard
+Disallow: /dpr
+Disallow: /dpr-summary
+Disallow: /departments
+Disallow: /analytics
+Disallow: /reports
+Disallow: /absentees
+
+Sitemap: https://aiccc-pulse.lovable.app/sitemap.xml

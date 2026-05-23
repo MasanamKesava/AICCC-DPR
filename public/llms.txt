@@ -1,0 +1,7 @@
+# AICCC DPR Management System
+
+> Centralized Daily Progress Report platform for the APCRDA AICCC infrastructure programme — tracks RFIs, worklogs, drawings, hindrances and department-level progress across every site.
+
+## Pages
+
+- [Home](/): Overview of the AICCC DPR platform and its capabilities.
