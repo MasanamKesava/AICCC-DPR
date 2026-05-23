@@ -237,8 +237,3 @@ function Dashboard() {
   );
 }
 
-// Keep ROW_SECTIONS imported to ensure shared mapping is referenced;
-// the values feed sectionStats above.
-void ROW_SECTIONS;
-  );
-}
