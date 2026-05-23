@@ -57,7 +57,7 @@ type Recorder = {
   recorded_at: string;
 };
 
-const ROW_TITLES = ["Tickets", "BIM", "CCTV", "Drone", "Logs"] as const;
+const ROW_TITLES = ROW_SECTIONS.map((s) => s.title) as readonly ("Tickets" | "BIM" | "CCTV" | "Drone" | "Logs")[];
 type RowTitle = (typeof ROW_TITLES)[number];
 type ManualDprRow = {
   total: string;
