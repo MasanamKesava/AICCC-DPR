@@ -101,6 +101,18 @@ function Dashboard() {
     tickets: entries.filter((e) => e.department === dep).length,
   }));
 
+  // Grand Total Summary by section (today) — shares logic with DPR Summary / PDF
+  const sectionStats = computeSectionStats(todayEntries);
+  const grandTotal = sectionStats.reduce(
+    (a, s) => ({
+      total: a.total + s.total,
+      completed: a.completed + s.completed,
+      inProgress: a.inProgress + s.inProgress,
+      delayed: a.delayed + s.delayed,
+    }),
+    { total: 0, completed: 0, inProgress: 0, delayed: 0 },
+  );
+
   return (
     <div className="space-y-6">
       <div>
