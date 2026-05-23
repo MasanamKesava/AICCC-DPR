@@ -28,7 +28,7 @@ import {
   Legend,
 } from "recharts";
 import { format, subDays, parseISO } from "date-fns";
-import { DEPARTMENTS } from "@/lib/dpr-constants";
+import { DEPARTMENTS, computeSectionStats } from "@/lib/dpr-constants";
 import type { DprEntry } from "@/lib/dpr-constants";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -100,6 +100,18 @@ function Dashboard() {
     name: dep.length > 12 ? dep.slice(0, 12) + "…" : dep,
     tickets: entries.filter((e) => e.department === dep).length,
   }));
+
+  // Grand Total Summary by section (today) — shares logic with DPR Summary / PDF
+  const sectionStats = computeSectionStats(todayEntries);
+  const grandTotal = sectionStats.reduce(
+    (a, s) => ({
+      total: a.total + s.total,
+      completed: a.completed + s.completed,
+      inProgress: a.inProgress + s.inProgress,
+      delayed: a.delayed + s.delayed,
+    }),
+    { total: 0, completed: 0, inProgress: 0, delayed: 0 },
+  );
 
   return (
     <div className="space-y-6">
@@ -196,6 +208,32 @@ function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Grand Total Summary — mirrors DPR Summary & printable PDF */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-base">Grand Total Summary (Today)</CardTitle>
+          <span className="text-xs text-muted-foreground">
+            Total {grandTotal.total} · {grandTotal.completed} done · {grandTotal.inProgress} wip ·{" "}
+            {grandTotal.delayed} delayed
+          </span>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={sectionStats.map((s) => ({ name: s.title, ...s }))}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="name" fontSize={12} />
+              <YAxis fontSize={12} allowDecimals={false} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="completed" stackId="a" fill="hsl(var(--success))" name="Completed" />
+              <Bar dataKey="inProgress" stackId="a" fill="hsl(var(--warning))" name="In Progress" />
+              <Bar dataKey="delayed" stackId="a" fill="hsl(var(--destructive))" name="Delayed" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
     </div>
   );
 }
+

@@ -39,6 +39,36 @@ export const PRIORITIES = [
   { value: "critical", label: "Critical" },
 ] as const;
 
+// Sections used in DPR Activity Log -> map to one or more entry categories.
+// Keeping this central guarantees the Activity Log, Grand Total Summary,
+// Dashboard chart, and printable PDF all derive identical numbers.
+export const ROW_SECTIONS = [
+  {
+    title: "Tickets",
+    categories: ["rfi", "worklog", "drawing", "hindrance", "labour", "machinery", "grievance"],
+  },
+  { title: "BIM", categories: ["bim"] },
+  { title: "CCTV", categories: ["cctv"] },
+  { title: "Drone", categories: ["drone"] },
+  { title: "Logs", categories: ["logs"] },
+] as const;
+
+export type RowSectionTitle = (typeof ROW_SECTIONS)[number]["title"];
+
+export type DprStatus = "open" | "in_progress" | "escalated" | "resolved" | "closed";
+
+export function computeSectionStats<T extends { category: string; status: DprStatus }>(
+  entries: T[],
+) {
+  return ROW_SECTIONS.map((section) => {
+    const rows = entries.filter((e) => (section.categories as readonly string[]).includes(e.category));
+    const completed = rows.filter((e) => e.status === "resolved" || e.status === "closed").length;
+    const inProgress = rows.filter((e) => e.status === "in_progress").length;
+    const delayed = rows.filter((e) => e.status === "escalated" || e.status === "open").length;
+    return { title: section.title, total: rows.length, completed, inProgress, delayed };
+  });
+}
+
 export type DprEntry = {
   id: string;
   entry_date: string;

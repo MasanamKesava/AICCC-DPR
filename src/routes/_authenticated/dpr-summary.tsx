@@ -22,8 +22,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Printer, FileDown, Plus, Trash2, Upload } from "lucide-react";
-import { ResponsiveContainer, AreaChart, Area, Tooltip } from "recharts";
-import { CATEGORIES, DEPARTMENTS, type DprEntry } from "@/lib/dpr-constants";
+import { ResponsiveContainer, AreaChart, Area, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
+import { CATEGORIES, DEPARTMENTS, ROW_SECTIONS, computeSectionStats, type DprEntry } from "@/lib/dpr-constants";
 import { z } from "zod";
 
 const absenteeSchema = z.object({
@@ -57,7 +57,7 @@ type Recorder = {
   recorded_at: string;
 };
 
-const ROW_TITLES = ["Tickets", "BIM", "CCTV", "Drone", "Logs"] as const;
+const ROW_TITLES = ROW_SECTIONS.map((s) => s.title) as readonly ("Tickets" | "BIM" | "CCTV" | "Drone" | "Logs")[];
 type RowTitle = (typeof ROW_TITLES)[number];
 type ManualDprRow = {
   total: string;
@@ -179,20 +179,17 @@ function DprSummary() {
     return days;
   }, [entries, date]);
 
-  const ticketBreakdown = useMemo(() => {
-    return CATEGORIES.map((c) => ({
-      label: c.label,
-      total: todayEntries.filter((e) => e.category === c.value).length,
-      completed: todayEntries.filter(
-        (e) => e.category === c.value && (e.status === "resolved" || e.status === "closed"),
-      ).length,
-      inProgress: todayEntries.filter((e) => e.category === c.value && e.status === "in_progress")
-        .length,
-      delayed: todayEntries.filter(
-        (e) => e.category === c.value && (e.status === "escalated" || e.status === "open"),
-      ).length,
-    }));
-  }, [todayEntries]);
+  // Single source of truth: per-section stats derived from today's entries.
+  // Used by Activity Log rows, Grand Total Summary, chart, and PDF.
+  const sectionStats = useMemo(() => computeSectionStats(todayEntries), [todayEntries]);
+
+  const ticketBreakdown = sectionStats.map((s) => ({
+    label: s.title,
+    total: s.total,
+    completed: s.completed,
+    inProgress: s.inProgress,
+    delayed: s.delayed,
+  }));
 
   const grandTotal = ticketBreakdown.reduce(
     (acc, r) => ({
@@ -207,66 +204,41 @@ function DprSummary() {
   const updateManualRow = (title: RowTitle, field: keyof ManualDprRow, value: string) => {
     setManualRows((current) => ({
       ...current,
-      [title]: {
-        ...current[title],
-        [field]: value,
-      },
+      [title]: { ...current[title], [field]: value },
     }));
   };
 
   const dprRows = useMemo(() => {
-    return ROW_TITLES.map((title) => {
+    return ROW_SECTIONS.map((section) => {
+      const title = section.title as RowTitle;
       const manual = manualRows[title];
-      if (title === "Tickets") {
-        const activity = formatActivity(manual, {
-          total: counts.tot,
-          completed: counts.completed,
-          inProgress: counts.inProgress,
-        });
-        const people = Array.from(
-          new Set(todayEntries.map((e) => e.person_responsible).filter(Boolean)),
-        ).join(", ");
-        const description = Array.from(
-          new Set(todayEntries.map((e) => e.description).filter(Boolean)),
-        )
-          .slice(0, 4)
-          .join("; ");
-        const evidence = Array.from(
-          new Set(todayEntries.map((e) => e.output_evidence).filter(Boolean)),
-        )
-          .slice(0, 3)
-          .join("; ");
-        const issues = Array.from(
-          new Set(todayEntries.map((e) => e.issues_noticed).filter(Boolean)),
-        )
-          .slice(0, 3)
-          .join("; ");
-        const action = Array.from(
-          new Set(todayEntries.map((e) => e.action_required).filter(Boolean)),
-        )
-          .slice(0, 3)
-          .join("; ");
-        return {
-          title,
-          activity,
-          description: manual.description || description,
-          people: manual.people || people,
-          evidence: manual.evidence || evidence,
-          issues: manual.issues || issues,
-          action: manual.action || action,
-        };
-      }
+      const stats = sectionStats.find((s) => s.title === section.title)!;
+      const sectionEntries = todayEntries.filter((e) =>
+        (section.categories as readonly string[]).includes(e.category),
+      );
+      const activity = formatActivity(manual, {
+        total: stats.total,
+        completed: stats.completed,
+        inProgress: stats.inProgress,
+      });
+      const join = (vals: (string | null)[], n: number) =>
+        Array.from(new Set(vals.filter(Boolean) as string[])).slice(0, n).join("; ");
       return {
         title,
-        activity: formatActivity(manual),
-        description: manual.description,
-        people: manual.people,
-        evidence: manual.evidence,
-        issues: manual.issues,
-        action: manual.action,
+        stats,
+        activity,
+        description: manual.description || join(sectionEntries.map((e) => e.description), 4),
+        people:
+          manual.people ||
+          Array.from(new Set(sectionEntries.map((e) => e.person_responsible).filter(Boolean))).join(
+            ", ",
+          ),
+        evidence: manual.evidence || join(sectionEntries.map((e) => e.output_evidence), 3),
+        issues: manual.issues || join(sectionEntries.map((e) => e.issues_noticed), 3),
+        action: manual.action || join(sectionEntries.map((e) => e.action_required), 3),
       };
     });
-  }, [counts, manualRows, todayEntries]);
+  }, [manualRows, sectionStats, todayEntries]);
 
   const initialVendor = todayEntries.find((e) => e.vendor)?.vendor ?? "—";
   const initialLocation = todayEntries.find((e) => e.location)?.location ?? "—";
@@ -595,7 +567,7 @@ function DprSummary() {
                       <td className="border-b border-border px-3 py-2">
                         <EditableActivityCell
                           row={manualRows[r.title]}
-                          fallback={r.title === "Tickets" ? counts : undefined}
+                          fallback={r.stats}
                           printValue={r.activity}
                           onChange={(field, value) => updateManualRow(r.title, field, value)}
                         />
@@ -692,6 +664,28 @@ function DprSummary() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Grand Total chart — same numbers as table & PDF */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Grand Total — Status by Section</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={ticketBreakdown}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis dataKey="label" fontSize={12} />
+                <YAxis fontSize={12} allowDecimals={false} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="completed" stackId="a" fill="hsl(var(--success))" name="Completed" />
+                <Bar dataKey="inProgress" stackId="a" fill="hsl(var(--warning))" name="In Progress" />
+                <Bar dataKey="delayed" stackId="a" fill="hsl(var(--destructive))" name="Delayed" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
 
         <div className="grid gap-4 lg:grid-cols-2">
           <AbsenteesCard
