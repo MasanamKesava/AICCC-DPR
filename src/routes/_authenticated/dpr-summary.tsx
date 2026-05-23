@@ -849,10 +849,16 @@ function AbsenteesCard({
 
   const addMut = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("absentees").insert({
+      const parsed = absenteeSchema.safeParse({
         employee_name: name,
-        department: dept || null,
+        department: dept || undefined,
         absent_date: date,
+      });
+      if (!parsed.success) throw new Error(parsed.error.issues[0].message);
+      const { error } = await supabase.from("absentees").insert({
+        employee_name: parsed.data.employee_name,
+        department: parsed.data.department ?? null,
+        absent_date: parsed.data.absent_date,
         created_by: userId,
       });
       if (error) throw error;
