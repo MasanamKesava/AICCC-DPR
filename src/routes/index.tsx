@@ -3,8 +3,24 @@ import { useAuth } from "@/contexts/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Activity, BarChart3, FileText, Shield, Workflow, Building2 } from "lucide-react";
 
+const OG_IMAGE = "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ca408d60-0114-48cd-a23b-832d10d95c02/id-preview-2415bf7c--50abdf37-baa6-4b34-9d4b-68bdf842b1b2.lovable.app-1779434895215.png";
+
 export const Route = createFileRoute("/")({
   component: Landing,
+  head: () => ({
+    meta: [
+      { title: "AICCC DPR Management System — Smart City Infrastructure Command Center" },
+      { name: "description", content: "Track RFIs, worklogs, drawings, hindrances and department progress across every AICCC site from one unified Daily Progress Report platform." },
+      { property: "og:title", content: "AICCC DPR Management System" },
+      { property: "og:description", content: "Track RFIs, worklogs, drawings, hindrances and department progress across every AICCC site from one unified Daily Progress Report platform." },
+      { property: "og:url", content: "https://aiccc-pulse.lovable.app/" },
+      { property: "og:image", content: OG_IMAGE },
+      { name: "twitter:title", content: "AICCC DPR Management System" },
+      { name: "twitter:description", content: "Track RFIs, worklogs, drawings, hindrances and department progress across every AICCC site." },
+      { name: "twitter:image", content: OG_IMAGE },
+    ],
+    links: [{ rel: "canonical", href: "https://aiccc-pulse.lovable.app/" }],
+  }),
 });
 
 function Landing() {
@@ -50,24 +66,27 @@ function Landing() {
         </div>
       </section>
 
-      <section className="container mx-auto px-4 pb-24">
-        <div className="grid gap-6 md:grid-cols-3">
-          {[
-            { icon: FileText, title: "DPR Entry", desc: "Capture every site activity by department, category and session." },
-            { icon: BarChart3, title: "Live Dashboard", desc: "Ticket aging, SLA breaches and department performance at a glance." },
-            { icon: Workflow, title: "Department Summary", desc: "RFI, worklog, drawing and hindrance counts auto-aggregated daily." },
-            { icon: Activity, title: "Trends & Analytics", desc: "Daily and weekly trend charts powered by Recharts." },
-            { icon: Shield, title: "Role-based Access", desc: "Admin, PM, Coordinator, PMC, Field Engineer and Viewer roles." },
-            { icon: FileText, title: "PDF & Excel Reports", desc: "Government-style exportable DPRs for any date range." },
-          ].map((f) => (
-            <div key={f.title} className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
-              <f.icon className="h-8 w-8 text-accent" />
-              <h3 className="mt-4 font-semibold">{f.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <main>
+        <section className="container mx-auto px-4 pb-24">
+          <h2 className="mb-8 text-center text-3xl font-bold tracking-tight">Everything you need to run the daily report</h2>
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              { icon: FileText, title: "DPR Entry", desc: "Capture every site activity by department, category and session." },
+              { icon: BarChart3, title: "Live Dashboard", desc: "Ticket aging, SLA breaches and department performance at a glance." },
+              { icon: Workflow, title: "Department Summary", desc: "RFI, worklog, drawing and hindrance counts auto-aggregated daily." },
+              { icon: Activity, title: "Trends & Analytics", desc: "Daily and weekly trend charts powered by Recharts." },
+              { icon: Shield, title: "Role-based Access", desc: "Admin, PM, Coordinator, PMC, Field Engineer and Viewer roles." },
+              { icon: FileText, title: "PDF & Excel Reports", desc: "Government-style exportable DPRs for any date range." },
+            ].map((f) => (
+              <div key={f.title} className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
+                <f.icon className="h-8 w-8 text-accent" aria-hidden="true" />
+                <h3 className="mt-4 font-semibold">{f.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
