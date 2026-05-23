@@ -567,7 +567,7 @@ function DprSummary() {
                       <td className="border-b border-border px-3 py-2">
                         <EditableActivityCell
                           row={manualRows[r.title]}
-                          fallback={r.title === "Tickets" ? counts : undefined}
+                          fallback={r.stats}
                           printValue={r.activity}
                           onChange={(field, value) => updateManualRow(r.title, field, value)}
                         />
