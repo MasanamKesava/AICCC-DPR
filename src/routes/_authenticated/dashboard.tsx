@@ -28,7 +28,7 @@ import {
   Legend,
 } from "recharts";
 import { format, subDays, parseISO } from "date-fns";
-import { DEPARTMENTS } from "@/lib/dpr-constants";
+import { DEPARTMENTS, ROW_SECTIONS, computeSectionStats } from "@/lib/dpr-constants";
 import type { DprEntry } from "@/lib/dpr-constants";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
