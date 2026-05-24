@@ -71,7 +71,6 @@ function AbsenteesPage() {
         department: form.department || undefined,
         designation: form.designation || undefined,
         absent_date: form.absent_date,
-        remarks: form.remarks || undefined,
       });
       if (!parsed.success) throw new Error(parsed.error.issues[0].message);
       const { error } = await supabase.from("absentees").insert({
@@ -79,7 +78,6 @@ function AbsenteesPage() {
         department: parsed.data.department ?? null,
         designation: parsed.data.designation ?? null,
         absent_date: parsed.data.absent_date,
-        remarks: parsed.data.remarks ?? null,
         created_by: user!.id,
       });
       if (error) throw error;
@@ -88,7 +86,7 @@ function AbsenteesPage() {
       qc.invalidateQueries({ queryKey: ["absentees-all"] });
       setOpen(false);
       toast.success("Added");
-      setForm({ ...form, employee_name: "", remarks: "" });
+      setForm({ ...form, employee_name: "" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
