@@ -206,6 +206,39 @@ export type Database = {
         }
         Relationships: []
       }
+      users: {
+        Row: {
+          created_at: string | null
+          department: string | null
+          email: string
+          full_name: string
+          id: number
+          is_active: boolean | null
+          password_hash: string
+          role: string
+        }
+        Insert: {
+          created_at?: string | null
+          department?: string | null
+          email: string
+          full_name: string
+          id?: number
+          is_active?: boolean | null
+          password_hash: string
+          role?: string
+        }
+        Update: {
+          created_at?: string | null
+          department?: string | null
+          email?: string
+          full_name?: string
+          id?: number
+          is_active?: boolean | null
+          password_hash?: string
+          role?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -217,6 +250,17 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      user_login: {
+        Args: { p_email: string; p_password: string }
+        Returns: {
+          department: string
+          email: string
+          full_name: string
+          login_status: string
+          role: string
+          user_id: number
+        }[]
       }
     }
     Enums: {
