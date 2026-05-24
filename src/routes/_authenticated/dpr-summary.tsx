@@ -56,7 +56,13 @@ type Recorder = {
   recorded_at: string;
 };
 
-const ROW_TITLES = ROW_SECTIONS.map((s) => s.title) as readonly ("Tickets" | "BIM" | "CCTV" | "Drone" | "Logs")[];
+const ROW_TITLES = ROW_SECTIONS.map((s) => s.title) as readonly (
+  | "Tickets"
+  | "BIM"
+  | "CCTV"
+  | "Drone"
+  | "Logs"
+)[];
 type RowTitle = (typeof ROW_TITLES)[number];
 type ManualDprRow = {
   total: string;
@@ -191,7 +197,13 @@ function DprSummary() {
       const delayed = Math.max(total - completed - inProgress, 0);
       return { label: s.title, total, completed, inProgress, delayed };
     }
-    return { label: s.title, total: s.total, completed: s.completed, inProgress: s.inProgress, delayed: s.delayed };
+    return {
+      label: s.title,
+      total: s.total,
+      completed: s.completed,
+      inProgress: s.inProgress,
+      delayed: s.delayed,
+    };
   });
 
   const grandTotal = ticketBreakdown.reduce(
@@ -225,26 +237,50 @@ function DprSummary() {
         inProgress: stats.inProgress,
       });
       const join = (vals: (string | null)[], n: number) =>
-        Array.from(new Set(vals.filter(Boolean) as string[])).slice(0, n).join("; ");
+        Array.from(new Set(vals.filter(Boolean) as string[]))
+          .slice(0, n)
+          .join("; ");
       return {
         title,
         stats,
         activity,
-        description: manual.description || join(sectionEntries.map((e) => e.description), 4),
+        description:
+          manual.description ||
+          join(
+            sectionEntries.map((e) => e.description),
+            4,
+          ),
         people:
           manual.people ||
           Array.from(new Set(sectionEntries.map((e) => e.person_responsible).filter(Boolean))).join(
             ", ",
           ),
-        evidence: manual.evidence || join(sectionEntries.map((e) => e.output_evidence), 3),
-        issues: manual.issues || join(sectionEntries.map((e) => e.issues_noticed), 3),
-        action: manual.action || join(sectionEntries.map((e) => e.action_required), 3),
+        evidence:
+          manual.evidence ||
+          join(
+            sectionEntries.map((e) => e.output_evidence),
+            3,
+          ),
+        issues:
+          manual.issues ||
+          join(
+            sectionEntries.map((e) => e.issues_noticed),
+            3,
+          ),
+        action:
+          manual.action ||
+          join(
+            sectionEntries.map((e) => e.action_required),
+            3,
+          ),
       };
     });
   }, [manualRows, sectionStats, todayEntries]);
 
-  const initialVendor = todayEntries.find((e) => e.vendor)?.vendor ?? "—";
-  const initialLocation = todayEntries.find((e) => e.location)?.location ?? "—";
+  const initialVendor =
+    todayEntries.find((e) => e.vendor)?.vendor ?? "M/s. Clove TechnologiesPvt. Ltd";
+  const initialLocation =
+    todayEntries.find((e) => e.location)?.location ?? "APCRDA Project Office,Rayapudi";
 
   const [vendor, setVendor] = useState<string>(initialVendor);
   const [location, setLocation] = useState<string>(initialLocation);
@@ -297,56 +333,106 @@ function DprSummary() {
       columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 45 }, 2: { cellWidth: 85 } },
     });
 
-    autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY + 15,
-      head: [["Category", "Total", "Completed", "In Progress", "Delayed", "% Done"]],
-      body: [
-        ...ticketBreakdown.map((r) => [
-          r.label,
-          r.total,
-          r.completed,
-          r.inProgress,
-          r.delayed,
-          r.total ? Math.round((r.completed / r.total) * 100) + "%" : "0%",
-        ]),
-        [
-          "GRAND TOTAL",
-          grandTotal.total,
-          grandTotal.completed,
-          grandTotal.inProgress,
-          grandTotal.delayed,
-          grandTotal.total
-            ? Math.round((grandTotal.completed / grandTotal.total) * 100) + "%"
-            : "0%",
-        ],
-      ],
-      styles: { fontSize: 9, cellPadding: 4 },
-      headStyles: { fillColor: [12, 35, 64] },
-      foot: undefined,
-      didParseCell: (data) => {
-        if (data.row.index === ticketBreakdown.length && data.section === "body") {
-          data.cell.styles.fontStyle = "bold";
-          data.cell.styles.fillColor = [240, 245, 250];
-        }
-      },
-    });
+    /* =========================================================
+   ABSENTEE DETAILS SECTION
+========================================================= */
 
+    const absStartY = (doc as any).lastAutoTable.finalY + 25;
+
+    // Section Heading Background
+    doc.setFillColor(12, 35, 64);
+
+    doc.roundedRect(30, absStartY, w - 60, 24, 4, 4, "F");
+
+    // Heading Text
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(255, 255, 255);
+
+    doc.text("ABSENTEE DETAILS", 40, absStartY + 16);
+
+    // Reset text color
+    doc.setTextColor(0, 0, 0);
+
+    // Absentee Table
     autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY + 15,
-      head: [["Sl", "Name", "Department", "Designation", "Date"]],
+      startY: absStartY + 32,
+
+      head: [["Sl.No", "Employee Name", "Department", "Designation", "Absent Date"]],
+
       body: absentees.length
         ? absentees.map((a, i) => [
             i + 1,
             a.employee_name,
             a.department ?? "—",
-            a.designation ?? "—",
+            a.designation ?? "AICCC Coordinator",
             format(parseISO(a.absent_date), "dd MMM yyyy"),
           ])
         : [["—", "No absentees recorded", "", "", ""]],
-      styles: { fontSize: 9, cellPadding: 4 },
-      headStyles: { fillColor: [12, 35, 64] },
-      columnStyles: { 0: { cellWidth: 28 } },
+
+      styles: {
+        fontSize: 9,
+        cellPadding: 5,
+        valign: "middle",
+        lineColor: [220, 220, 220],
+        lineWidth: 0.4,
+      },
+
+      headStyles: {
+        fillColor: [45, 138, 158],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        halign: "center",
+      },
+
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+
+      bodyStyles: {
+        textColor: [40, 40, 40],
+      },
+
+      columnStyles: {
+        0: {
+          cellWidth: 45,
+          halign: "center",
+        },
+
+        1: {
+          cellWidth: 170,
+        },
+
+        2: {
+          cellWidth: 120,
+        },
+
+        3: {
+          cellWidth: 120,
+        },
+
+        4: {
+          cellWidth: 90,
+          halign: "center",
+        },
+      },
     });
+    // autoTable(doc, {
+    //   startY: (doc as any).lastAutoTable.finalY + 15,
+    //   head: [["Sl", "Name", "Department", "Designation", "Date"]],
+    //   body: absentees.length
+    //     ? absentees.map((a, i) => [
+    //         i + 1,
+    //         a.employee_name,
+    //         a.department ?? "—",
+    //         a.designation ?? "—",
+    //         format(parseISO(a.absent_date), "dd MMM yyyy"),
+    //       ])
+    //     : [["—", "No absentees recorded", "", "", ""]],
+    //   styles: { fontSize: 9, cellPadding: 4 },
+    //   headStyles: { fillColor: [12, 35, 64] },
+    //   columnStyles: { 0: { cellWidth: 28 } },
+    // });
 
     let y = (doc as any).lastAutoTable.finalY + 25;
     doc.setFont("helvetica", "bold").setFontSize(10).text("RECORDED BY", 30, y);
@@ -374,12 +460,16 @@ function DprSummary() {
       30,
       46,
     );
-    doc.text(`Department: All  ·  Total entries: ${todayEntries.length}`, w - 30, 46, { align: "right" });
+    doc.text(`Department: All  ·  Total entries: ${todayEntries.length}`, w - 30, 46, {
+      align: "right",
+    });
     doc.setTextColor(0, 0, 0);
 
     autoTable(doc, {
       startY: 80,
-      head: [["Date", "Dept", "Category", "Description", "Total", "Done", "WIP", "Status", "Priority"]],
+      head: [
+        ["Date", "Dept", "Category", "Description", "Total", "Done", "WIP", "Status", "Priority"],
+      ],
       body: todayEntries.map((entry) => [
         format(new Date(entry.entry_date), "dd MMM"),
         entry.department,
@@ -539,9 +629,7 @@ function DprSummary() {
                     <th className="border-b border-border px-3 py-2 font-semibold">
                       Activity Done Today
                     </th>
-                    <th className="border-b border-border px-3 py-2 font-semibold">
-                      Description
-                    </th>
+                    <th className="border-b border-border px-3 py-2 font-semibold">Description</th>
                     <th className="border-b border-border px-3 py-2 font-semibold">
                       Person Responsible
                     </th>
@@ -665,10 +753,6 @@ function DprSummary() {
             </div>
           </CardContent>
         </Card>
-
-
-
-
 
         <div className="grid gap-4 lg:grid-cols-2">
           <AbsenteesCard
