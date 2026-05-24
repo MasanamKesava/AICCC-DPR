@@ -182,13 +182,17 @@ function DprSummary() {
   // Used by Activity Log rows, Grand Total Summary, chart, and PDF.
   const sectionStats = useMemo(() => computeSectionStats(todayEntries), [todayEntries]);
 
-  const ticketBreakdown = sectionStats.map((s) => ({
-    label: s.title,
-    total: s.total,
-    completed: s.completed,
-    inProgress: s.inProgress,
-    delayed: s.delayed,
-  }));
+  const ticketBreakdown = sectionStats.map((s) => {
+    if (s.title === "Tickets") {
+      const m = manualRows["Tickets"];
+      const total = m.total !== "" ? numValue(m.total, s.total) : s.total;
+      const completed = m.completed !== "" ? numValue(m.completed, s.completed) : s.completed;
+      const inProgress = m.inProgress !== "" ? numValue(m.inProgress, s.inProgress) : s.inProgress;
+      const delayed = Math.max(total - completed - inProgress, 0);
+      return { label: s.title, total, completed, inProgress, delayed };
+    }
+    return { label: s.title, total: s.total, completed: s.completed, inProgress: s.inProgress, delayed: s.delayed };
+  });
 
   const grandTotal = ticketBreakdown.reduce(
     (acc, r) => ({
