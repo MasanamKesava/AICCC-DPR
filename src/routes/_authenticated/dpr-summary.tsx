@@ -329,16 +329,19 @@ function DprSummary() {
 
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 15,
-      head: [["ABSENTEES", ""]],
+      head: [["Sl", "Name", "Department", "Designation", "Date"]],
       body: absentees.length
         ? absentees.map((a, i) => [
             i + 1,
-            a.employee_name + (a.department ? ` (${a.department})` : ""),
+            a.employee_name,
+            a.department ?? "—",
+            a.designation ?? "—",
+            format(parseISO(a.absent_date), "dd MMM yyyy"),
           ])
-        : [["—", "No absentees recorded"]],
+        : [["—", "No absentees recorded", "", "", ""]],
       styles: { fontSize: 9, cellPadding: 4 },
       headStyles: { fillColor: [12, 35, 64] },
-      columnStyles: { 0: { cellWidth: 40 } },
+      columnStyles: { 0: { cellWidth: 28 } },
     });
 
     let y = (doc as any).lastAutoTable.finalY + 25;
