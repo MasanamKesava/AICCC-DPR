@@ -49,7 +49,6 @@ function AbsenteesPage() {
     department: "",
     designation: "",
     absent_date: format(new Date(), "yyyy-MM-dd"),
-    remarks: "",
   });
 
   const { data: rows = [] } = useQuery({
