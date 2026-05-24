@@ -193,14 +193,13 @@ function AbsenteesPage() {
                 <th className="px-3 py-2">Department</th>
                 <th className="px-3 py-2">Designation</th>
                 <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Remarks</th>
                 <th className="w-12"></th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center text-muted-foreground">
+                  <td colSpan={6} className="p-6 text-center text-muted-foreground">
                     No absentees
                   </td>
                 </tr>
@@ -212,7 +211,6 @@ function AbsenteesPage() {
                   <td className="px-3 py-2">{r.department ?? "—"}</td>
                   <td className="px-3 py-2">{r.designation ?? "—"}</td>
                   <td className="px-3 py-2">{format(new Date(r.absent_date), "dd MMM yyyy")}</td>
-                  <td className="px-3 py-2">{r.remarks ?? "—"}</td>
                   <td className="px-3 py-2 text-right">
                     {r.created_by === user?.id && (
                       <Button
