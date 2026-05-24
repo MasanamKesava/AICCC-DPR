@@ -96,10 +96,6 @@ function ReportsPage() {
     },
   });
 
-  const summaryRows = DEPARTMENTS.map((d) => {
-    const ents = entries.filter((e) => e.department === d);
-    return [d, ...CATEGORIES.map((c) => ents.filter((e) => e.category === c.value).length), ents.length];
-  });
 
   const exportPdf = () => {
     if (!entries.length) {
