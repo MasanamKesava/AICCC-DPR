@@ -57,11 +57,26 @@ export type RowSectionTitle = (typeof ROW_SECTIONS)[number]["title"];
 
 export type DprStatus = "open" | "in_progress" | "escalated" | "resolved" | "closed";
 
-export function computeSectionStats<T extends { category: string; status: DprStatus }>(
-  entries: T[],
-) {
+type StatsEntry = {
+  category: string;
+  status: DprStatus;
+  total_tickets?: number | null;
+  completed_tickets?: number | null;
+  in_progress_tickets?: number | null;
+};
+
+// Sum the ticket-count fields per section. Falls back to entry-row counts
+// (with status-based completed/in-progress) when no manual numbers were entered.
+export function computeSectionStats<T extends StatsEntry>(entries: T[]) {
   return ROW_SECTIONS.map((section) => {
     const rows = entries.filter((e) => (section.categories as readonly string[]).includes(e.category));
+    const summedTotal = rows.reduce((a, e) => a + (e.total_tickets ?? 0), 0);
+    const summedDone = rows.reduce((a, e) => a + (e.completed_tickets ?? 0), 0);
+    const summedWip = rows.reduce((a, e) => a + (e.in_progress_tickets ?? 0), 0);
+    if (summedTotal > 0 || summedDone > 0 || summedWip > 0) {
+      const delayed = Math.max(summedTotal - summedDone - summedWip, 0);
+      return { title: section.title, total: summedTotal, completed: summedDone, inProgress: summedWip, delayed };
+    }
     const completed = rows.filter((e) => e.status === "resolved" || e.status === "closed").length;
     const inProgress = rows.filter((e) => e.status === "in_progress").length;
     const delayed = rows.filter((e) => e.status === "escalated" || e.status === "open").length;
@@ -83,10 +98,13 @@ export type DprEntry = {
   output_evidence: string | null;
   issues_noticed: string | null;
   action_required: string | null;
-  status: "open" | "in_progress" | "escalated" | "resolved" | "closed";
+  status: DprStatus;
   priority: "low" | "medium" | "high" | "critical";
   session: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  total_tickets?: number;
+  completed_tickets?: number;
+  in_progress_tickets?: number;
 };

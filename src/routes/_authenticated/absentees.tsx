@@ -25,7 +25,6 @@ const absenteeSchema = z.object({
   department: z.string().trim().max(100).optional(),
   designation: z.string().trim().max(100).optional(),
   absent_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
-  remarks: z.string().trim().max(500).optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/absentees")({ component: AbsenteesPage });
@@ -50,7 +49,6 @@ function AbsenteesPage() {
     department: "",
     designation: "",
     absent_date: format(new Date(), "yyyy-MM-dd"),
-    remarks: "",
   });
 
   const { data: rows = [] } = useQuery({
@@ -73,7 +71,6 @@ function AbsenteesPage() {
         department: form.department || undefined,
         designation: form.designation || undefined,
         absent_date: form.absent_date,
-        remarks: form.remarks || undefined,
       });
       if (!parsed.success) throw new Error(parsed.error.issues[0].message);
       const { error } = await supabase.from("absentees").insert({
@@ -81,7 +78,6 @@ function AbsenteesPage() {
         department: parsed.data.department ?? null,
         designation: parsed.data.designation ?? null,
         absent_date: parsed.data.absent_date,
-        remarks: parsed.data.remarks ?? null,
         created_by: user!.id,
       });
       if (error) throw error;
@@ -90,7 +86,7 @@ function AbsenteesPage() {
       qc.invalidateQueries({ queryKey: ["absentees-all"] });
       setOpen(false);
       toast.success("Added");
-      setForm({ ...form, employee_name: "", remarks: "" });
+      setForm({ ...form, employee_name: "" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -163,13 +159,6 @@ function AbsenteesPage() {
                   onChange={(e) => setForm({ ...form, absent_date: e.target.value })}
                 />
               </div>
-              <div className="sm:col-span-2">
-                <Label>Remarks</Label>
-                <Input
-                  value={form.remarks}
-                  onChange={(e) => setForm({ ...form, remarks: e.target.value })}
-                />
-              </div>
             </div>
             <DialogFooter>
               <Button
@@ -204,14 +193,13 @@ function AbsenteesPage() {
                 <th className="px-3 py-2">Department</th>
                 <th className="px-3 py-2">Designation</th>
                 <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Remarks</th>
                 <th className="w-12"></th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center text-muted-foreground">
+                  <td colSpan={6} className="p-6 text-center text-muted-foreground">
                     No absentees
                   </td>
                 </tr>
@@ -223,7 +211,6 @@ function AbsenteesPage() {
                   <td className="px-3 py-2">{r.department ?? "—"}</td>
                   <td className="px-3 py-2">{r.designation ?? "—"}</td>
                   <td className="px-3 py-2">{format(new Date(r.absent_date), "dd MMM yyyy")}</td>
-                  <td className="px-3 py-2">{r.remarks ?? "—"}</td>
                   <td className="px-3 py-2 text-right">
                     {r.created_by === user?.id && (
                       <Button

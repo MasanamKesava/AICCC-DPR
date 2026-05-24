@@ -22,8 +22,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Printer, FileDown, Plus, Trash2, Upload } from "lucide-react";
-import { ResponsiveContainer, AreaChart, Area, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
-import { CATEGORIES, DEPARTMENTS, ROW_SECTIONS, computeSectionStats, type DprEntry } from "@/lib/dpr-constants";
+import { ResponsiveContainer, AreaChart, Area, Tooltip } from "recharts";
+import { ROW_SECTIONS, computeSectionStats, type DprEntry } from "@/lib/dpr-constants";
 import { z } from "zod";
 
 const absenteeSchema = z.object({
@@ -31,7 +31,6 @@ const absenteeSchema = z.object({
   department: z.string().trim().max(100).optional(),
   designation: z.string().trim().max(100).optional(),
   absent_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
-  remarks: z.string().trim().max(500).optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/dpr-summary")({ component: DprSummary });
@@ -183,13 +182,17 @@ function DprSummary() {
   // Used by Activity Log rows, Grand Total Summary, chart, and PDF.
   const sectionStats = useMemo(() => computeSectionStats(todayEntries), [todayEntries]);
 
-  const ticketBreakdown = sectionStats.map((s) => ({
-    label: s.title,
-    total: s.total,
-    completed: s.completed,
-    inProgress: s.inProgress,
-    delayed: s.delayed,
-  }));
+  const ticketBreakdown = sectionStats.map((s) => {
+    if (s.title === "Tickets") {
+      const m = manualRows["Tickets"];
+      const total = m.total !== "" ? numValue(m.total, s.total) : s.total;
+      const completed = m.completed !== "" ? numValue(m.completed, s.completed) : s.completed;
+      const inProgress = m.inProgress !== "" ? numValue(m.inProgress, s.inProgress) : s.inProgress;
+      const delayed = Math.max(total - completed - inProgress, 0);
+      return { label: s.title, total, completed, inProgress, delayed };
+    }
+    return { label: s.title, total: s.total, completed: s.completed, inProgress: s.inProgress, delayed: s.delayed };
+  });
 
   const grandTotal = ticketBreakdown.reduce(
     (acc, r) => ({
@@ -330,16 +333,19 @@ function DprSummary() {
 
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 15,
-      head: [["ABSENTEES", ""]],
+      head: [["Sl", "Name", "Department", "Designation", "Date"]],
       body: absentees.length
         ? absentees.map((a, i) => [
             i + 1,
-            a.employee_name + (a.department ? ` (${a.department})` : ""),
+            a.employee_name,
+            a.department ?? "—",
+            a.designation ?? "—",
+            format(parseISO(a.absent_date), "dd MMM yyyy"),
           ])
-        : [["—", "No absentees recorded"]],
+        : [["—", "No absentees recorded", "", "", ""]],
       styles: { fontSize: 9, cellPadding: 4 },
       headStyles: { fillColor: [12, 35, 64] },
-      columnStyles: { 0: { cellWidth: 40 } },
+      columnStyles: { 0: { cellWidth: 28 } },
     });
 
     let y = (doc as any).lastAutoTable.finalY + 25;
@@ -371,40 +377,31 @@ function DprSummary() {
     doc.text(`Department: All  ·  Total entries: ${todayEntries.length}`, w - 30, 46, { align: "right" });
     doc.setTextColor(0, 0, 0);
 
-    const reportSummaryRows = DEPARTMENTS.map((department) => {
-      const departmentEntries = todayEntries.filter((entry) => entry.department === department);
-      return [
-        department,
-        ...CATEGORIES.map((category) =>
-          departmentEntries.filter((entry) => entry.category === category.value).length,
-        ),
-        departmentEntries.length,
-      ];
-    });
-
     autoTable(doc, {
       startY: 80,
-      head: [["Department", ...CATEGORIES.map((category) => category.label), "Total"]],
-      body: reportSummaryRows,
-      styles: { fontSize: 5.6, cellPadding: 2 },
-      headStyles: { fillColor: [12, 35, 64] },
-      columnStyles: { 0: { cellWidth: 85 } },
-    });
-
-    autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY + 12,
-      head: [["Date", "Dept", "Category", "Description", "Status", "Priority"]],
+      head: [["Date", "Dept", "Category", "Description", "Total", "Done", "WIP", "Status", "Priority"]],
       body: todayEntries.map((entry) => [
         format(new Date(entry.entry_date), "dd MMM"),
         entry.department,
         entry.category.toUpperCase(),
         entry.description || "",
+        (entry as any).total_tickets ?? 0,
+        (entry as any).completed_tickets ?? 0,
+        (entry as any).in_progress_tickets ?? 0,
         entry.status.replace("_", " "),
         entry.priority,
       ]),
       styles: { fontSize: 7, cellPadding: 3, valign: "top" },
       headStyles: { fillColor: [45, 138, 158] },
-      columnStyles: { 0: { cellWidth: 45 }, 1: { cellWidth: 95 }, 2: { cellWidth: 60 }, 3: { cellWidth: 170 } },
+      columnStyles: {
+        0: { cellWidth: 45 },
+        1: { cellWidth: 90 },
+        2: { cellWidth: 55 },
+        3: { cellWidth: 170 },
+        4: { halign: "right" },
+        5: { halign: "right" },
+        6: { halign: "right" },
+      },
     });
 
     const pageH = doc.internal.pageSize.getHeight();
@@ -565,12 +562,16 @@ function DprSummary() {
                       <td className="border-b border-border px-3 py-2">{i + 1}</td>
                       <td className="border-b border-border px-3 py-2 font-semibold">{r.title}</td>
                       <td className="border-b border-border px-3 py-2">
-                        <EditableActivityCell
-                          row={manualRows[r.title]}
-                          fallback={r.stats}
-                          printValue={r.activity}
-                          onChange={(field, value) => updateManualRow(r.title, field, value)}
-                        />
+                        {r.title === "Tickets" ? (
+                          <EditableActivityCell
+                            row={manualRows[r.title]}
+                            fallback={r.stats}
+                            printValue={r.activity}
+                            onChange={(field, value) => updateManualRow(r.title, field, value)}
+                          />
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </td>
                       <td className="border-b border-border px-3 py-2">
                         <EditableTextCell
@@ -665,26 +666,8 @@ function DprSummary() {
           </CardContent>
         </Card>
 
-        {/* Grand Total chart — same numbers as table & PDF */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Grand Total — Status by Section</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={ticketBreakdown}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="label" fontSize={12} />
-                <YAxis fontSize={12} allowDecimals={false} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="completed" stackId="a" fill="hsl(var(--success))" name="Completed" />
-                <Bar dataKey="inProgress" stackId="a" fill="hsl(var(--warning))" name="In Progress" />
-                <Bar dataKey="delayed" stackId="a" fill="hsl(var(--destructive))" name="Delayed" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+
+
 
 
         <div className="grid gap-4 lg:grid-cols-2">
