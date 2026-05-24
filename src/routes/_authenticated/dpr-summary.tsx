@@ -373,40 +373,31 @@ function DprSummary() {
     doc.text(`Department: All  ·  Total entries: ${todayEntries.length}`, w - 30, 46, { align: "right" });
     doc.setTextColor(0, 0, 0);
 
-    const reportSummaryRows = DEPARTMENTS.map((department) => {
-      const departmentEntries = todayEntries.filter((entry) => entry.department === department);
-      return [
-        department,
-        ...CATEGORIES.map((category) =>
-          departmentEntries.filter((entry) => entry.category === category.value).length,
-        ),
-        departmentEntries.length,
-      ];
-    });
-
     autoTable(doc, {
       startY: 80,
-      head: [["Department", ...CATEGORIES.map((category) => category.label), "Total"]],
-      body: reportSummaryRows,
-      styles: { fontSize: 5.6, cellPadding: 2 },
-      headStyles: { fillColor: [12, 35, 64] },
-      columnStyles: { 0: { cellWidth: 85 } },
-    });
-
-    autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY + 12,
-      head: [["Date", "Dept", "Category", "Description", "Status", "Priority"]],
+      head: [["Date", "Dept", "Category", "Description", "Total", "Done", "WIP", "Status", "Priority"]],
       body: todayEntries.map((entry) => [
         format(new Date(entry.entry_date), "dd MMM"),
         entry.department,
         entry.category.toUpperCase(),
         entry.description || "",
+        (entry as any).total_tickets ?? 0,
+        (entry as any).completed_tickets ?? 0,
+        (entry as any).in_progress_tickets ?? 0,
         entry.status.replace("_", " "),
         entry.priority,
       ]),
       styles: { fontSize: 7, cellPadding: 3, valign: "top" },
       headStyles: { fillColor: [45, 138, 158] },
-      columnStyles: { 0: { cellWidth: 45 }, 1: { cellWidth: 95 }, 2: { cellWidth: 60 }, 3: { cellWidth: 170 } },
+      columnStyles: {
+        0: { cellWidth: 45 },
+        1: { cellWidth: 90 },
+        2: { cellWidth: 55 },
+        3: { cellWidth: 170 },
+        4: { halign: "right" },
+        5: { halign: "right" },
+        6: { halign: "right" },
+      },
     });
 
     const pageH = doc.internal.pageSize.getHeight();
