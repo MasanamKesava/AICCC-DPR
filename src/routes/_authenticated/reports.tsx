@@ -141,14 +141,23 @@ function ReportsPage() {
         6: { halign: "right" },
       },
     });
-      row.Total = ents.length;
-      return row;
-    });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Summary");
 
+    doc.save(`${filePrefix}.pdf`);
+    toast.success("PDF generated");
+  };
+
+  const exportXlsx = () => {
+    if (!entries.length) {
+      toast.error("No data in range");
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailRows(entries)), "Entries");
     XLSX.writeFile(wb, `${filePrefix}.xlsx`);
     toast.success("Excel generated");
   };
+
 
   const exportCsv = () => {
     if (!entries.length) {
