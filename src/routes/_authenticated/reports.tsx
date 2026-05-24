@@ -120,70 +120,27 @@ function ReportsPage() {
 
     autoTable(doc, {
       startY: 34,
-      head: [["Department", ...CATEGORIES.map((c) => c.label), "Total"]],
-      body: summaryRows,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [12, 35, 64] },
-    });
-
-    autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY + 8,
-      head: [["Date", "Dept", "Category", "Vendor", "Location", "Activity", "Description", "Person", "Evidence", "Issues", "Action", "Status", "Priority", "Session"]],
+      head: [["Date", "Dept", "Category", "Description", "Total", "Done", "WIP", "Status", "Priority"]],
       body: entries.map((entry) => [
         format(parseISO(entry.entry_date), "dd MMM"),
         entry.department,
         entry.category.toUpperCase(),
-        entry.vendor ?? "",
-        entry.location ?? "",
-        entry.activity_type ?? "",
         entry.description,
-        entry.person_responsible ?? "",
-        entry.output_evidence ?? "",
-        entry.issues_noticed ?? "",
-        entry.action_required ?? "",
+        (entry as any).total_tickets ?? 0,
+        (entry as any).completed_tickets ?? 0,
+        (entry as any).in_progress_tickets ?? 0,
         entry.status.replace("_", " "),
         entry.priority,
-        entry.session ?? "",
       ]),
-      styles: { fontSize: 5.5, cellPadding: 2, valign: "top" },
+      styles: { fontSize: 7, cellPadding: 3, valign: "top" },
       headStyles: { fillColor: [45, 138, 158] },
       columnStyles: {
-        0: { cellWidth: 16 },
-        1: { cellWidth: 28 },
-        2: { cellWidth: 18 },
-        3: { cellWidth: 22 },
-        4: { cellWidth: 24 },
-        5: { cellWidth: 24 },
-        6: { cellWidth: 42 },
-        7: { cellWidth: 24 },
-        8: { cellWidth: 30 },
-        9: { cellWidth: 28 },
-        10: { cellWidth: 28 },
-        11: { cellWidth: 18 },
-        12: { cellWidth: 16 },
-        13: { cellWidth: 16 },
+        3: { cellWidth: 110 },
+        4: { halign: "right" },
+        5: { halign: "right" },
+        6: { halign: "right" },
       },
     });
-
-    doc.save(`${filePrefix}.pdf`);
-    toast.success("PDF generated");
-  };
-
-  const exportXlsx = () => {
-    if (!entries.length) {
-      toast.error("No data in range");
-      return;
-    }
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailRows(entries)), "Entries");
-
-    const summary = DEPARTMENTS.map((d) => {
-      const ents = entries.filter((e) => e.department === d);
-      const row: Record<string, string | number> = { Department: d };
-      CATEGORIES.forEach((c) => {
-        row[c.label] = ents.filter((e) => e.category === c.value).length;
-      });
       row.Total = ents.length;
       return row;
     });
