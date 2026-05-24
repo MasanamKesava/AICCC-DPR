@@ -558,12 +558,16 @@ function DprSummary() {
                       <td className="border-b border-border px-3 py-2">{i + 1}</td>
                       <td className="border-b border-border px-3 py-2 font-semibold">{r.title}</td>
                       <td className="border-b border-border px-3 py-2">
-                        <EditableActivityCell
-                          row={manualRows[r.title]}
-                          fallback={r.stats}
-                          printValue={r.activity}
-                          onChange={(field, value) => updateManualRow(r.title, field, value)}
-                        />
+                        {r.title === "Tickets" ? (
+                          <EditableActivityCell
+                            row={manualRows[r.title]}
+                            fallback={r.stats}
+                            printValue={r.activity}
+                            onChange={(field, value) => updateManualRow(r.title, field, value)}
+                          />
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </td>
                       <td className="border-b border-border px-3 py-2">
                         <EditableTextCell
