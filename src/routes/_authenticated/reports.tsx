@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DEPARTMENTS, CATEGORIES, type DprEntry } from "@/lib/dpr-constants";
+import { DEPARTMENTS, type DprEntry } from "@/lib/dpr-constants";
 import { FileDown, FileSpreadsheet, FileText } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/reports")({ component: ReportsPage });
