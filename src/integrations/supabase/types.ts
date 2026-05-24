@@ -55,12 +55,14 @@ export type Database = {
           action_required: string | null
           activity_type: string | null
           category: Database["public"]["Enums"]["ticket_category"]
+          completed_tickets: number
           created_at: string
           created_by: string | null
           department: string
           description: string
           entry_date: string
           id: string
+          in_progress_tickets: number
           issues_noticed: string | null
           location: string | null
           output_evidence: string | null
@@ -69,6 +71,7 @@ export type Database = {
           project_name: string
           session: string | null
           status: Database["public"]["Enums"]["dpr_status"]
+          total_tickets: number
           updated_at: string
           vendor: string | null
         }
@@ -76,12 +79,14 @@ export type Database = {
           action_required?: string | null
           activity_type?: string | null
           category: Database["public"]["Enums"]["ticket_category"]
+          completed_tickets?: number
           created_at?: string
           created_by?: string | null
           department: string
           description: string
           entry_date?: string
           id?: string
+          in_progress_tickets?: number
           issues_noticed?: string | null
           location?: string | null
           output_evidence?: string | null
@@ -90,6 +95,7 @@ export type Database = {
           project_name?: string
           session?: string | null
           status?: Database["public"]["Enums"]["dpr_status"]
+          total_tickets?: number
           updated_at?: string
           vendor?: string | null
         }
@@ -97,12 +103,14 @@ export type Database = {
           action_required?: string | null
           activity_type?: string | null
           category?: Database["public"]["Enums"]["ticket_category"]
+          completed_tickets?: number
           created_at?: string
           created_by?: string | null
           department?: string
           description?: string
           entry_date?: string
           id?: string
+          in_progress_tickets?: number
           issues_noticed?: string | null
           location?: string | null
           output_evidence?: string | null
@@ -111,6 +119,7 @@ export type Database = {
           project_name?: string
           session?: string | null
           status?: Database["public"]["Enums"]["dpr_status"]
+          total_tickets?: number
           updated_at?: string
           vendor?: string | null
         }
