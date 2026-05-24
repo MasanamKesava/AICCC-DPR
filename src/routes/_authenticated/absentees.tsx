@@ -159,13 +159,6 @@ function AbsenteesPage() {
                   onChange={(e) => setForm({ ...form, absent_date: e.target.value })}
                 />
               </div>
-              <div className="sm:col-span-2">
-                <Label>Remarks</Label>
-                <Input
-                  value={form.remarks}
-                  onChange={(e) => setForm({ ...form, remarks: e.target.value })}
-                />
-              </div>
             </div>
             <DialogFooter>
               <Button
