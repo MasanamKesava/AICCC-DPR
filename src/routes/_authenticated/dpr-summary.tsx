@@ -658,26 +658,8 @@ function DprSummary() {
           </CardContent>
         </Card>
 
-        {/* Grand Total chart — same numbers as table & PDF */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Grand Total — Status by Section</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={ticketBreakdown}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="label" fontSize={12} />
-                <YAxis fontSize={12} allowDecimals={false} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="completed" stackId="a" fill="hsl(var(--success))" name="Completed" />
-                <Bar dataKey="inProgress" stackId="a" fill="hsl(var(--warning))" name="In Progress" />
-                <Bar dataKey="delayed" stackId="a" fill="hsl(var(--destructive))" name="Delayed" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+
+
 
 
         <div className="grid gap-4 lg:grid-cols-2">
