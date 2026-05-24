@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Printer, FileDown, Plus, Trash2, Upload } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
-import { CATEGORIES, DEPARTMENTS, ROW_SECTIONS, computeSectionStats, type DprEntry } from "@/lib/dpr-constants";
+import { ROW_SECTIONS, computeSectionStats, type DprEntry } from "@/lib/dpr-constants";
 import { z } from "zod";
 
 const absenteeSchema = z.object({
