@@ -291,6 +291,7 @@ function NewEntryDialog({ onClose, userId }: { onClose: () => void; userId: stri
         <div className="sm:col-span-2"><Label>Output / Evidence</Label><Textarea rows={2} value={form.output_evidence} onChange={(e) => setForm({ ...form, output_evidence: e.target.value })} /></div>
         <div className="sm:col-span-2"><Label>Issues Noticed</Label><Textarea rows={2} value={form.issues_noticed} onChange={(e) => setForm({ ...form, issues_noticed: e.target.value })} /></div>
         <div className="sm:col-span-2"><Label>Action Required</Label><Textarea rows={2} value={form.action_required} onChange={(e) => setForm({ ...form, action_required: e.target.value })} /></div>
+        <div className="sm:col-span-2"><Label>Notes (printed in PDF)</Label><Textarea rows={3} placeholder="Additional notes to appear in the downloadable PDF report…" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
       </div>
       <DialogFooter>
         <Button variant="outline" onClick={onClose}>Cancel</Button>
