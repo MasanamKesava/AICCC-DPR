@@ -504,7 +504,7 @@ function DprSummary() {
     autoTable(doc, {
       startY: 80,
       head: [
-        ["Date", "Dept", "Category", "Description", "Total", "Done", "WIP", "Status", "Priority"],
+        ["Date", "Dept", "Category", "Description", "Total", "Done", "WIP", "Status", "Priority", "Notes"],
       ],
       body: todayEntries.map((entry) => [
         format(new Date(entry.entry_date), "dd MMM"),
@@ -516,17 +516,19 @@ function DprSummary() {
         (entry as any).in_progress_tickets ?? 0,
         entry.status.replace("_", " "),
         entry.priority,
+        (entry as any).notes || "—",
       ]),
       styles: { fontSize: 7, cellPadding: 3, valign: "top" },
       headStyles: { fillColor: [45, 138, 158] },
       columnStyles: {
         0: { cellWidth: 45 },
-        1: { cellWidth: 90 },
-        2: { cellWidth: 55 },
-        3: { cellWidth: 170 },
+        1: { cellWidth: 80 },
+        2: { cellWidth: 50 },
+        3: { cellWidth: 130 },
         4: { halign: "right" },
         5: { halign: "right" },
         6: { halign: "right" },
+        9: { cellWidth: 90 },
       },
     });
 
