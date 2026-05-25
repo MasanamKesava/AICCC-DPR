@@ -1125,14 +1125,27 @@ function RecorderSlot({
         .from("signatures")
         .upload(path, file, { upsert: true });
       if (error) throw error;
-      const { data } = supabase.storage.from("signatures").getPublicUrl(path);
-      await saveMut.mutateAsync(data.publicUrl);
+      // Store the storage path; we generate signed URLs on read.
+      await saveMut.mutateAsync(path);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
       setUploading(false);
     }
   };
+
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    const raw = recorder?.signature_url;
+    if (!raw) { setSignedUrl(null); return; }
+    if (raw.startsWith("http")) { setSignedUrl(raw); return; }
+    supabase.storage.from("signatures").createSignedUrl(raw, 3600).then(({ data }) => {
+      if (active) setSignedUrl(data?.signedUrl ?? null);
+    });
+    return () => { active = false; };
+  }, [recorder?.signature_url]);
+
 
   return (
     <div className="rounded-md border border-border p-3">
