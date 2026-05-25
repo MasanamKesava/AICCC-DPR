@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthProvider";
@@ -1125,14 +1125,27 @@ function RecorderSlot({
         .from("signatures")
         .upload(path, file, { upsert: true });
       if (error) throw error;
-      const { data } = supabase.storage.from("signatures").getPublicUrl(path);
-      await saveMut.mutateAsync(data.publicUrl);
+      // Store the storage path; we generate signed URLs on read.
+      await saveMut.mutateAsync(path);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
       setUploading(false);
     }
   };
+
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    const raw = recorder?.signature_url;
+    if (!raw) { setSignedUrl(null); return; }
+    if (raw.startsWith("http")) { setSignedUrl(raw); return; }
+    supabase.storage.from("signatures").createSignedUrl(raw, 3600).then(({ data }) => {
+      if (active) setSignedUrl(data?.signedUrl ?? null);
+    });
+    return () => { active = false; };
+  }, [recorder?.signature_url]);
+
 
   return (
     <div className="rounded-md border border-border p-3">
@@ -1142,8 +1155,8 @@ function RecorderSlot({
       <p className="mt-1 font-semibold">{recorder?.name ?? "—"}</p>
       <p className="text-xs text-muted-foreground">{recorder?.designation ?? ""}</p>
       <div className="mt-2 h-14 rounded border border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden">
-        {recorder?.signature_url ? (
-          <img src={recorder.signature_url} alt="signature" className="max-h-full object-contain" />
+        {signedUrl ? (
+          <img src={signedUrl} alt="signature" className="max-h-full object-contain" />
         ) : (
           <span className="text-[10px] text-muted-foreground">No signature</span>
         )}
