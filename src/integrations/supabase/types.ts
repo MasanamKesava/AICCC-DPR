@@ -65,6 +65,7 @@ export type Database = {
           in_progress_tickets: number
           issues_noticed: string | null
           location: string | null
+          notes: string | null
           output_evidence: string | null
           person_responsible: string | null
           priority: Database["public"]["Enums"]["dpr_priority"]
@@ -89,6 +90,7 @@ export type Database = {
           in_progress_tickets?: number
           issues_noticed?: string | null
           location?: string | null
+          notes?: string | null
           output_evidence?: string | null
           person_responsible?: string | null
           priority?: Database["public"]["Enums"]["dpr_priority"]
@@ -113,6 +115,7 @@ export type Database = {
           in_progress_tickets?: number
           issues_noticed?: string | null
           location?: string | null
+          notes?: string | null
           output_evidence?: string | null
           person_responsible?: string | null
           priority?: Database["public"]["Enums"]["dpr_priority"]
