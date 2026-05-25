@@ -68,7 +68,17 @@ type ManualDprRow = {
   total: string;
   completed: string;
   inProgress: string;
-  description: string;
+
+  rfi: string;
+  worklog: string;
+  drawing: string;
+  hindrance: string;
+  labor: string;
+  machinery: string;
+  grievance: string;
+
+  notes: string;
+
   people: string;
   evidence: string;
   issues: string;
@@ -83,7 +93,17 @@ const emptyManualRows = () =>
         total: "",
         completed: "",
         inProgress: "",
-        description: "",
+
+        rfi: "",
+        worklog: "",
+        drawing: "",
+        hindrance: "",
+        labor: "",
+        machinery: "",
+        grievance: "",
+
+        notes: "",
+
         people: "",
         evidence: "",
         issues: "",
@@ -92,21 +112,26 @@ const emptyManualRows = () =>
     }),
     {} as Record<RowTitle, ManualDprRow>,
   );
-
 const numValue = (value: string, fallback = 0) => {
   if (value === "") return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-const formatActivity = (
-  row: ManualDprRow,
-  fallback?: { total: number; completed: number; inProgress: number },
-) => {
-  const total = numValue(row.total, fallback?.total ?? 0);
-  const completed = numValue(row.completed, fallback?.completed ?? 0);
-  const inProgress = numValue(row.inProgress, fallback?.inProgress ?? 0);
-  return `Total Tickets - ${total}\nCompleted - ${completed}\nIn Progress - ${inProgress}`;
+const formatActivity = (row: ManualDprRow, title: RowTitle) => {
+  // Tickets detailed activity
+  if (title === "Tickets") {
+    return `RFI - ${row.rfi || "-"}
+Worklog - ${row.worklog || "-"}
+Drawing - ${row.drawing || "-"}
+Hindrance - ${row.hindrance || "-"}
+Labor - ${row.labor || "-"}
+Machinery - ${row.machinery || "-"}
+Grievance - ${row.grievance || "-"}`;
+  }
+
+  // Notes for BIM / CCTV / Drone / Logs
+  return row.notes || "—";
 };
 
 function DprSummary() {
@@ -116,7 +141,12 @@ function DprSummary() {
   const [manualRows, setManualRows] = useState<Record<RowTitle, ManualDprRow>>(() =>
     emptyManualRows(),
   );
+  const [notes, setNotes] = useState({
+    morning: "",
+    afternoon: "",
+  });
 
+  
   const { data: entries = [] } = useQuery({
     queryKey: ["dpr-summary-entries", date],
     queryFn: async () => {
@@ -231,11 +261,7 @@ function DprSummary() {
       const sectionEntries = todayEntries.filter((e) =>
         (section.categories as readonly string[]).includes(e.category),
       );
-      const activity = formatActivity(manual, {
-        total: stats.total,
-        completed: stats.completed,
-        inProgress: stats.inProgress,
-      });
+      const activity = formatActivity(manual, title);
       const join = (vals: (string | null)[], n: number) =>
         Array.from(new Set(vals.filter(Boolean) as string[]))
           .slice(0, n)
@@ -244,12 +270,6 @@ function DprSummary() {
         title,
         stats,
         activity,
-        description:
-          manual.description ||
-          join(
-            sectionEntries.map((e) => e.description),
-            4,
-          ),
         people:
           manual.people ||
           Array.from(new Set(sectionEntries.map((e) => e.person_responsible).filter(Boolean))).join(
@@ -304,33 +324,161 @@ function DprSummary() {
     doc.text(`Vendor: ${vendor}  ·  Site: ${location}`, w - 30, 46, { align: "right" });
     doc.setTextColor(0, 0, 0);
 
+    /* =========================================================
+   TICKET SUMMARY SECTION
+========================================================= */
+
+    doc.setFillColor(12, 35, 64);
+
+    doc.roundedRect(30, 75, w - 60, 24, 4, 4, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(255, 255, 255);
+
+    doc.text("TICKET SUMMARY", 40, 91);
+
+    doc.setTextColor(0, 0, 0);
+
     autoTable(doc, {
-      startY: 80,
+      startY: 108,
+
+      head: [["Total Tickets", "Completed", "In Progress", "Delayed / Open"]],
+
+      body: [
+        [
+          manualRows["Tickets"].total || counts.tot,
+          manualRows["Tickets"].completed || counts.completed,
+          manualRows["Tickets"].inProgress || counts.inProgress,
+          counts.delayed,
+        ],
+      ],
+
+      styles: {
+        fontSize: 9,
+        cellPadding: 6,
+        halign: "center",
+        valign: "middle",
+        lineColor: [220, 220, 220],
+        lineWidth: 0.5,
+      },
+
+      headStyles: {
+        fillColor: [45, 138, 158],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        halign: "center",
+      },
+
+      bodyStyles: {
+        textColor: [40, 40, 40],
+      },
+
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+    });
+
+    /* =========================================================
+   DPR ACTIVITY LOG SECTION
+========================================================= */
+
+    const dprStartY = (doc as any).lastAutoTable.finalY + 25;
+
+    // Section Heading
+    doc.setFillColor(12, 35, 64);
+
+    doc.roundedRect(30, dprStartY, w - 60, 24, 4, 4, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(255, 255, 255);
+
+    doc.text("DPR — ACTIVITY LOG", 40, dprStartY + 16);
+
+    doc.setTextColor(0, 0, 0);
+
+    /* =========================================================
+   DPR TABLE
+========================================================= */
+
+    autoTable(doc, {
+      startY: dprStartY + 32,
+
       head: [
         [
           "Sl",
           "Title",
           "Activity Done Today",
-          "Description",
           "Person Responsible",
           "Output / Evidence",
           "Issues",
           "Action Required",
         ],
       ],
+
       body: dprRows.map((r, i) => [
         i + 1,
         r.title,
         r.activity,
-        r.description || "—",
         r.people || "—",
         r.evidence || "—",
         r.issues || "—",
         r.action || "—",
       ]),
-      styles: { fontSize: 8, cellPadding: 4, valign: "top" },
-      headStyles: { fillColor: [45, 138, 158] },
-      columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 45 }, 2: { cellWidth: 85 } },
+
+      styles: {
+        fontSize: 8,
+        cellPadding: 4,
+        valign: "top",
+        lineColor: [220, 220, 220],
+        lineWidth: 0.4,
+      },
+
+      headStyles: {
+        fillColor: [45, 138, 158],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+      },
+
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+
+      bodyStyles: {
+        textColor: [40, 40, 40],
+      },
+
+      columnStyles: {
+        0: {
+          cellWidth: 22,
+          halign: "center",
+        },
+
+        1: {
+          cellWidth: 55,
+        },
+
+        2: {
+          cellWidth: 120,
+        },
+
+        3: {
+          cellWidth: 90,
+        },
+
+        4: {
+          cellWidth: 90,
+        },
+
+        5: {
+          cellWidth: 90,
+        },
+
+        6: {
+          cellWidth: 90,
+        },
+      },
     });
 
     /* =========================================================
@@ -467,14 +615,11 @@ function DprSummary() {
 
     autoTable(doc, {
       startY: 80,
-      head: [
-        ["Date", "Dept", "Category", "Description", "Total", "Done", "WIP", "Status", "Priority"],
-      ],
+      head: [["Date", "Dept", "Category", "Total", "Done", "WIP", "Status", "Priority"]],
       body: todayEntries.map((entry) => [
         format(new Date(entry.entry_date), "dd MMM"),
         entry.department,
         entry.category.toUpperCase(),
-        entry.description || "",
         (entry as any).total_tickets ?? 0,
         (entry as any).completed_tickets ?? 0,
         (entry as any).in_progress_tickets ?? 0,
@@ -614,82 +759,173 @@ function DprSummary() {
           />
         </div>
 
+        <Card>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3 print:hidden">
+              {/* Total Tickets */}
+              <div>
+                <Label>Total Tickets</Label>
+
+                <Input
+                  type="number"
+                  min="0"
+                  value={manualRows["Tickets"].total}
+                  placeholder={String(counts.tot)}
+                  onChange={(e) => updateManualRow("Tickets", "total" as any, e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+
+              {/* Completed */}
+              <div>
+                <Label>Completed</Label>
+
+                <Input
+                  type="number"
+                  min="0"
+                  value={manualRows["Tickets"].completed}
+                  placeholder={String(counts.completed)}
+                  onChange={(e) => updateManualRow("Tickets", "completed" as any, e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+
+              {/* In Progress */}
+              <div>
+                <Label>In Progress</Label>
+
+                <Input
+                  type="number"
+                  min="0"
+                  value={manualRows["Tickets"].inProgress}
+                  placeholder={String(counts.inProgress)}
+                  onChange={(e) => updateManualRow("Tickets", "inProgress" as any, e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        {/* Printable Ticket Summary */}
+        <div className="hidden print:block mb-4">
+          <div className="rounded-md border border-black p-3">
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div>
+                <p className="font-semibold">Total Tickets</p>
+                <p>{manualRows["Tickets"].total || counts.tot}</p>
+              </div>
+
+              <div>
+                <p className="font-semibold">Completed</p>
+                <p>{manualRows["Tickets"].completed || counts.completed}</p>
+              </div>
+
+              <div>
+                <p className="font-semibold">In Progress</p>
+                <p>{manualRows["Tickets"].inProgress || counts.inProgress}</p>
+              </div>
+            </div>
+          </div>
+        </div>
         {/* Main DPR table */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">DPR — Activity Log</CardTitle>
+          <CardHeader className="pb-2 print:pb-1">
+            <CardTitle className="text-base print:text-sm">DPR — Activity Log</CardTitle>
           </CardHeader>
+
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-xs">
+            <div className="overflow-x-auto print:overflow-visible">
+              <table className="w-full border-collapse text-[11px] print:text-[9px] leading-relaxed">
+                {" "}
                 <thead>
-                  <tr className="bg-muted/60 text-left">
-                    <th className="border-b border-border px-3 py-2 font-semibold">Sl.</th>
-                    <th className="border-b border-border px-3 py-2 font-semibold">Title</th>
-                    <th className="border-b border-border px-3 py-2 font-semibold">
+                  <tr className="bg-gray-200 text-center">
+                    <th className="border border-black px-2 py-3 font-bold w-[40px] print:w-[30px]">
+                      Sl.No
+                    </th>
+
+                    <th className="border border-black px-2 py-3 font-bold w-[80px] print:w-[60px]">
+                      Title
+                    </th>
+
+                    <th className="border border-black px-3 py-3 font-bold w-[240px] print:w-[180px]">
                       Activity Done Today
                     </th>
-                    <th className="border-b border-border px-3 py-2 font-semibold">Description</th>
-                    <th className="border-b border-border px-3 py-2 font-semibold">
+
+                    <th className="border border-black px-3 py-3 font-bold w-[140px] print:w-[110px]">
                       Person Responsible
                     </th>
-                    <th className="border-b border-border px-3 py-2 font-semibold">
+
+                    <th className="border border-black px-3 py-3 font-bold w-[150px] print:w-[120px]">
                       Output / Evidence
                     </th>
-                    <th className="border-b border-border px-3 py-2 font-semibold">
+
+                    <th className="border border-black px-3 py-3 font-bold w-[150px] print:w-[120px]">
                       Issues Noticed
                     </th>
-                    <th className="border-b border-border px-3 py-2 font-semibold">
+
+                    <th className="border border-black px-3 py-3 font-bold w-[150px] print:w-[120px]">
                       Action Required
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {dprRows.map((r, i) => (
-                    <tr key={r.title} className="align-top">
-                      <td className="border-b border-border px-3 py-2">{i + 1}</td>
-                      <td className="border-b border-border px-3 py-2 font-semibold">{r.title}</td>
-                      <td className="border-b border-border px-3 py-2">
+                    <tr key={r.title} className="align-top break-inside-avoid">
+                      <td className="border border-black px-2 py-3 text-center align-top whitespace-pre-line">
+                        {i + 1}
+                      </td>
+
+                      <td className="border border-black px-2 py-3 font-semibold align-top">
+                        {r.title}
+                      </td>
+
+                      <td className="border border-black px-3 py-3 align-top whitespace-pre-line">
                         {r.title === "Tickets" ? (
                           <EditableActivityCell
                             row={manualRows[r.title]}
-                            fallback={r.stats}
+                            title={r.title}
                             printValue={r.activity}
-                            onChange={(field, value) => updateManualRow(r.title, field, value)}
+                            onChange={(field, value) =>
+                              updateManualRow(r.title, field as any, value)
+                            }
                           />
                         ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
+                          <EditableActivityCell
+                            row={manualRows[r.title]}
+                            title={r.title}
+                            printValue={r.activity}
+                            onChange={(field, value) =>
+                              updateManualRow(r.title, field as any, value)
+                            }
+                          />
                         )}
                       </td>
-                      <td className="border-b border-border px-3 py-2">
-                        <EditableTextCell
-                          value={manualRows[r.title].description}
-                          printValue={r.description}
-                          onChange={(value) => updateManualRow(r.title, "description", value)}
-                        />
-                      </td>
-                      <td className="border-b border-border px-3 py-2">
+
+                      <td className="border border-black px-3 py-3 align-top whitespace-pre-line">
                         <EditableTextCell
                           value={manualRows[r.title].people}
                           printValue={r.people}
                           onChange={(value) => updateManualRow(r.title, "people", value)}
                         />
                       </td>
-                      <td className="border-b border-border px-3 py-2">
+
+                      <td className="border border-black px-3 py-3 align-top whitespace-pre-line">
                         <EditableTextCell
                           value={manualRows[r.title].evidence}
                           printValue={r.evidence}
                           onChange={(value) => updateManualRow(r.title, "evidence", value)}
                         />
                       </td>
-                      <td className="border-b border-border px-3 py-2">
+
+                      <td className="border border-black px-3 py-3 align-top whitespace-pre-line">
                         <EditableTextCell
                           value={manualRows[r.title].issues}
                           printValue={r.issues}
                           onChange={(value) => updateManualRow(r.title, "issues", value)}
                         />
                       </td>
-                      <td className="border-b border-border px-3 py-2">
+
+                      <td className="border border-black px-3 py-3 align-top whitespace-pre-line">
                         <EditableTextCell
                           value={manualRows[r.title].action}
                           printValue={r.action}
@@ -785,40 +1021,60 @@ function Field({ label, value }: { label: string; value: string }) {
 
 function EditableActivityCell({
   row,
-  fallback,
+  title,
   printValue,
   onChange,
 }: {
   row: ManualDprRow;
-  fallback?: { tot?: number; total?: number; completed: number; inProgress: number };
+  title: RowTitle;
   printValue: string;
-  onChange: (field: "total" | "completed" | "inProgress", value: string) => void;
+  onChange: (field: string, value: string) => void;
 }) {
-  const totalFallback = fallback?.total ?? fallback?.tot ?? 0;
-  const fields: { field: "total" | "completed" | "inProgress"; label: string; fallback: number }[] =
-    [
-      { field: "total", label: "Total Tickets", fallback: totalFallback },
-      { field: "completed", label: "Completed", fallback: fallback?.completed ?? 0 },
-      { field: "inProgress", label: "In Progress", fallback: fallback?.inProgress ?? 0 },
-    ];
+  // Tickets row
+  if (title === "Tickets") {
+    const fields = [
+      { field: "rfi", label: "RFI" },
+      { field: "worklog", label: "Worklog" },
+      { field: "drawing", label: "Drawing" },
+      { field: "hindrance", label: "Hindrance" },
+      { field: "labor", label: "Labor" },
+      { field: "machinery", label: "Machinery" },
+      { field: "grievance", label: "Grievance" },
+    ] as const;
 
+    return (
+      <>
+        <div className="grid min-w-[220px] gap-2 print:hidden">
+          {fields.map(({ field, label }) => (
+            <label key={field} className="grid grid-cols-[1fr_120px] items-center gap-2">
+              <span className="text-[11px] text-muted-foreground">{label}</span>
+
+              <Input
+                type="text"
+                value={row[field]}
+                placeholder={label}
+                onChange={(e) => onChange(field, e.target.value)}
+                className="h-8"
+              />
+            </label>
+          ))}
+        </div>
+
+        <span className="hidden whitespace-pre-line print:block">{printValue || "—"}</span>
+      </>
+    );
+  }
+
+  // BIM / CCTV / Drone / Logs notes
   return (
     <>
-      <div className="grid min-w-[170px] gap-2 print:hidden">
-        {fields.map(({ field, label, fallback }) => (
-          <label key={field} className="grid grid-cols-[1fr_70px] items-center gap-2">
-            <span className="text-[11px] text-muted-foreground">{label}</span>
-            <Input
-              type="number"
-              min="0"
-              value={row[field]}
-              placeholder={String(fallback)}
-              onChange={(e) => onChange(field, e.target.value)}
-              className="h-8 text-right"
-            />
-          </label>
-        ))}
-      </div>
+      <Textarea
+        value={row.notes}
+        placeholder={`Enter ${title} notes`}
+        onChange={(e) => onChange("notes", e.target.value)}
+        className="min-h-24 min-w-[180px] resize-y text-xs print:hidden"
+      />
+
       <span className="hidden whitespace-pre-line print:block">{printValue || "—"}</span>
     </>
   );

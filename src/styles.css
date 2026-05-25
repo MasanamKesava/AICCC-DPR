@@ -117,3 +117,156 @@
   * { border-color: var(--color-border); }
   body { background-color: var(--color-background); color: var(--color-foreground); font-feature-settings: "cv02","cv03","cv04","cv11"; }
 }
+
+/* =========================================================
+   PRINT / PDF DPR TABLE STYLING
+========================================================= */
+
+@media print {
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 10px !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th,
+  td {
+    border: 1px solid #000 !important;
+    padding: 6px !important;
+    vertical-align: top !important;
+    word-break: break-word !important;
+  }
+
+  th {
+    background: #2d8a9e !important;
+    color: white !important;
+    font-weight: bold !important;
+    text-align: center !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+  }
+
+  textarea,
+  input {
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    resize: none !important;
+    padding: 0 !important;
+  }
+
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  .print\\:block {
+    display: block !important;
+  }
+
+  .print\\:text-sm {
+    font-size: 10px !important;
+  }
+
+  .print\\:text-xs {
+    font-size: 8px !important;
+  }
+
+  .print\\:overflow-visible {
+    overflow: visible !important;
+  }
+
+  .break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .rounded-lg,
+  .rounded-md,
+  .shadow,
+  .shadow-sm,
+  .shadow-md {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .bg-muted\\/60,
+  .bg-muted\\/40 {
+    background: #f1f5f9 !important;
+  }
+
+  .text-muted-foreground {
+    color: #555 !important;
+  }
+
+  .border-border {
+    border-color: #000 !important;
+  }
+
+  .print-header {
+    background: #0c2340 !important;
+    color: white !important;
+    padding: 12px !important;
+  }
+
+  .print-section-title {
+    background: #0c2340 !important;
+    color: white !important;
+    font-weight: bold !important;
+    padding: 8px 12px !important;
+    margin-top: 20px !important;
+    margin-bottom: 8px !important;
+    border-radius: 4px !important;
+  }
+
+  .print-table td {
+    min-height: 80px !important;
+  }
+
+  .print-table {
+    table-layout: fixed !important;
+  }
+
+  .print-table th:nth-child(1),
+  .print-table td:nth-child(1) {
+    width: 4% !important;
+    text-align: center !important;
+  }
+
+  .print-table th:nth-child(2),
+  .print-table td:nth-child(2) {
+    width: 10% !important;
+  }
+
+  .print-table th:nth-child(3),
+  .print-table td:nth-child(3) {
+    width: 24% !important;
+  }
+
+  .print-table th:nth-child(4),
+  .print-table td:nth-child(4) {
+    width: 14% !important;
+  }
+
+  .print-table th:nth-child(5),
+  .print-table td:nth-child(5) {
+    width: 16% !important;
+  }
+
+  .print-table th:nth-child(6),
+  .print-table td:nth-child(6) {
+    width: 16% !important;
+  }
+
+  .print-table th:nth-child(7),
+  .print-table td:nth-child(7) {
+    width: 16% !important;
+  }
+}
