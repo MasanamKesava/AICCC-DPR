@@ -197,6 +197,42 @@ export type Database = {
         }
         Relationships: []
       }
+      visitors: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          organization: string | null
+          purpose: string | null
+          remarks: string | null
+          updated_at: string
+          visit_date: string
+          visitor_name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization?: string | null
+          purpose?: string | null
+          remarks?: string | null
+          updated_at?: string
+          visit_date?: string
+          visitor_name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization?: string | null
+          purpose?: string | null
+          remarks?: string | null
+          updated_at?: string
+          visit_date?: string
+          visitor_name?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Printer, FileDown, Plus, Trash2, Upload } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, Tooltip } from "recharts";
-import { ROW_SECTIONS, computeSectionStats, type DprEntry } from "@/lib/dpr-constants";
+import { DEPARTMENTS, ROW_SECTIONS, computeSectionStats, type DprEntry } from "@/lib/dpr-constants";
 import { z } from "zod";
 
 const absenteeSchema = z.object({
@@ -31,6 +31,13 @@ const absenteeSchema = z.object({
   department: z.string().trim().max(100).optional(),
   designation: z.string().trim().max(100).optional(),
   absent_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
+});
+
+const visitorSchema = z.object({
+  visitor_name: z.string().trim().min(1, "Name required").max(150),
+  organization: z.string().trim().max(150).optional(),
+  purpose: z.string().trim().max(250).optional(),
+  visit_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
 });
 
 export const Route = createFileRoute("/_authenticated/dpr-summary")({ component: DprSummary });
@@ -41,6 +48,15 @@ type Absentee = {
   department: string | null;
   designation: string | null;
   absent_date: string;
+  remarks: string | null;
+  created_by: string | null;
+};
+type Visitor = {
+  id: string;
+  visitor_name: string;
+  organization: string | null;
+  purpose: string | null;
+  visit_date: string;
   remarks: string | null;
   created_by: string | null;
 };
@@ -174,6 +190,19 @@ function DprSummary() {
     },
   });
 
+  const { data: visitors = [] } = useQuery({
+    queryKey: ["visitors", date],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("visitors")
+        .select("*")
+        .eq("visit_date", date)
+        .order("visitor_name");
+      if (error) throw error;
+      return data as Visitor[];
+    },
+  });
+
   const { data: recorders = [] } = useQuery({
     queryKey: ["recorders", date],
     queryFn: async () => {
@@ -214,6 +243,69 @@ function DprSummary() {
   }, [entries, date]);
 
   const sectionStats = useMemo(() => computeSectionStats(todayEntries), [todayEntries]);
+
+  const departmentSummary = useMemo(() => {
+    type DeptSummaryRow = {
+      department: string;
+      rfi: number;
+      worklog: number;
+      drawing: number;
+      hindrance: number;
+      labour: number;
+      machinery: number;
+      grievance: number;
+      total: number;
+    };
+
+    const rowsMap = new Map<string, DeptSummaryRow>();
+    const baseRow = (): DeptSummaryRow => ({
+      department: "",
+      rfi: 0,
+      worklog: 0,
+      drawing: 0,
+      hindrance: 0,
+      labour: 0,
+      machinery: 0,
+      grievance: 0,
+      total: 0,
+    });
+
+    for (const department of DEPARTMENTS) {
+      rowsMap.set(department, { ...baseRow(), department });
+    }
+
+    todayEntries.forEach((entry) => {
+      const department = entry.department || "Unknown";
+      const row = rowsMap.get(department) ?? { ...baseRow(), department };
+      if (!rowsMap.has(department)) {
+        rowsMap.set(department, row);
+      }
+
+      if (entry.category in row) {
+        row[entry.category as keyof Omit<DeptSummaryRow, "department" | "total">] =
+          (row[entry.category as keyof Omit<DeptSummaryRow, "department" | "total">] as number) + 1;
+      }
+      row.total += 1;
+    });
+
+    const rows = Array.from(rowsMap.values()).sort((a, b) => a.department.localeCompare(b.department));
+    const totals = rows.reduce(
+      (acc, row) => ({
+        department: "Total",
+        rfi: acc.rfi + row.rfi,
+        worklog: acc.worklog + row.worklog,
+        drawing: acc.drawing + row.drawing,
+        hindrance: acc.hindrance + row.hindrance,
+        labour: acc.labour + row.labour,
+        machinery: acc.machinery + row.machinery,
+        grievance: acc.grievance + row.grievance,
+        total: acc.total + row.total,
+      }),
+      { ...baseRow(), department: "Total" },
+    );
+
+    return [...rows, totals];
+  }, [todayEntries]);
 
   const ticketBreakdown = sectionStats.map((s) => {
     if (s.title === "Tickets") {
@@ -415,27 +507,41 @@ function DprSummary() {
       },
     });
 
-    // ── DAILY NOTES (Morning / Afternoon) ────────────────────────────────────
-    // Always included in PDF. Shows "—" when empty so the section is always visible.
-    const notesSecY = (doc as any).lastAutoTable.finalY + 25;
-
+    const departmentSummaryStartY = (doc as any).lastAutoTable.finalY + 25;
     doc.setFillColor(12, 35, 64);
-    doc.roundedRect(30, notesSecY, w - 60, 24, 4, 4, "F");
+    doc.roundedRect(30, departmentSummaryStartY, w - 60, 24, 4, 4, "F");
     doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(255, 255, 255);
-    doc.text("DAILY NOTES", 40, notesSecY + 16);
+    doc.text("DEPARTMENT PERFORMANCE SUMMARY", 40, departmentSummaryStartY + 16);
     doc.setTextColor(0, 0, 0);
 
     autoTable(doc, {
-      startY: notesSecY + 32,
-      head: [["Session", "Notes"]],
-      body: [
-        ["Morning", notes.morning.trim() || "—"],
-        ["Afternoon", notes.afternoon.trim() || "—"],
-      ],
+      startY: departmentSummaryStartY + 32,
+      head: [[
+        "Department",
+        "RFI",
+        "Worklogs",
+        "Drawings",
+        "Hindrances",
+        "Labour",
+        "Machinery",
+        "Grievance",
+        "Grand Total",
+      ]],
+      body: departmentSummary.map((row) => [
+        row.department,
+        row.rfi,
+        row.worklog,
+        row.drawing,
+        row.hindrance,
+        row.labour,
+        row.machinery,
+        row.grievance,
+        row.total,
+      ]),
       styles: {
-        fontSize: 9,
-        cellPadding: 6,
-        valign: "top",
+        fontSize: 8,
+        cellPadding: 4,
+        valign: "middle",
         lineColor: [220, 220, 220],
         lineWidth: 0.4,
       },
@@ -444,11 +550,18 @@ function DprSummary() {
         textColor: [255, 255, 255],
         fontStyle: "bold",
       },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
       bodyStyles: { textColor: [40, 40, 40] },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
       columnStyles: {
-        0: { cellWidth: 90, fontStyle: "bold" },
-        1: { cellWidth: "auto" },
+        0: { cellWidth: 140 },
+        1: { cellWidth: 45, halign: "center" },
+        2: { cellWidth: 45, halign: "center" },
+        3: { cellWidth: 45, halign: "center" },
+        4: { cellWidth: 45, halign: "center" },
+        5: { cellWidth: 45, halign: "center" },
+        6: { cellWidth: 45, halign: "center" },
+        7: { cellWidth: 45, halign: "center" },
+        8: { cellWidth: 50, halign: "center" },
       },
     });
 
@@ -493,6 +606,51 @@ function DprSummary() {
         1: { cellWidth: 170 },
         2: { cellWidth: 120 },
         3: { cellWidth: 120 },
+        4: { cellWidth: 90, halign: "center" },
+      },
+    });
+
+    // ── VISITOR DETAILS ──────────────────────────────────────────────────────
+    const visitorStartY = (doc as any).lastAutoTable.finalY + 25;
+
+    doc.setFillColor(12, 35, 64);
+    doc.roundedRect(30, visitorStartY, w - 60, 24, 4, 4, "F");
+    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(255, 255, 255);
+    doc.text("VISITOR DETAILS", 40, visitorStartY + 16);
+    doc.setTextColor(0, 0, 0);
+
+    autoTable(doc, {
+      startY: visitorStartY + 32,
+      head: [["Sl.No", "Visitor Name", "Organization", "Purpose", "Visit Date"]],
+      body: visitors.length
+        ? visitors.map((v, i) => [
+            i + 1,
+            v.visitor_name,
+            v.organization ?? "—",
+            v.purpose ?? "—",
+            format(parseISO(v.visit_date), "dd MMM yyyy"),
+          ])
+        : [["—", "No visitors recorded", "", "", ""]],
+      styles: {
+        fontSize: 9,
+        cellPadding: 5,
+        valign: "middle",
+        lineColor: [220, 220, 220],
+        lineWidth: 0.4,
+      },
+      headStyles: {
+        fillColor: [45, 138, 158],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        halign: "center",
+      },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      bodyStyles: { textColor: [40, 40, 40] },
+      columnStyles: {
+        0: { cellWidth: 45, halign: "center" },
+        1: { cellWidth: 150 },
+        2: { cellWidth: 140 },
+        3: { cellWidth: 160 },
         4: { cellWidth: 90, halign: "center" },
       },
     });
@@ -551,16 +709,19 @@ function DprSummary() {
     doc.rect(0, 0, w, 60, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold").setFontSize(14);
-    doc.text("AICCC REPORTS DATA", 30, 28);
+    doc.text("AICCC — DAILY PROGRESS REPORT", 30, 28);
     doc.setFont("helvetica", "normal").setFontSize(10);
+    doc.text("Department Breakdown Performance", 30, 42);
     doc.text("APCRDA Project Office", w - 30, 28, { align: "right" });
     doc.setFontSize(9);
+    doc.text("DPR Department Wise Summary Report", 30, 56);
     doc.text(
       `${format(parseISO(date), "dd MMM yyyy")}  ·  ${format(parseISO(date), "EEEE")}`,
-      30,
-      46,
+      w - 30,
+      42,
+      { align: "right" },
     );
-    doc.text(`Department: All  ·  Total entries: ${todayEntries.length}`, w - 30, 46, {
+    doc.text(`Department: All  ·  Total entries: ${todayEntries.length}`, w - 30, 56, {
       align: "right",
     });
     doc.setTextColor(0, 0, 0);
@@ -590,39 +751,6 @@ function DprSummary() {
         6: { halign: "right" },
       },
     });
-
-    // NOTES SECTION — separate passage block per entry
-    const notesEntries = todayEntries.filter((e) => ((e as any).notes ?? "").trim());
-    if (notesEntries.length) {
-      let ny = (doc as any).lastAutoTable.finalY + 25;
-      const pageH2 = doc.internal.pageSize.getHeight();
-
-      doc.setFillColor(12, 35, 64);
-      doc.roundedRect(30, ny, w - 60, 24, 4, 4, "F");
-      doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(255, 255, 255);
-      doc.text("NOTES", 40, ny + 16);
-      doc.setTextColor(0, 0, 0);
-      ny += 38;
-
-      notesEntries.forEach((entry, idx) => {
-        const header = `${idx + 1}. ${entry.department} — ${entry.category.toUpperCase()} (${format(new Date(entry.entry_date), "dd MMM yyyy")})`;
-        const noteText = ((entry as any).notes ?? "").toString();
-        const wrapped = doc.splitTextToSize(noteText, w - 80);
-        const blockH = 14 + wrapped.length * 11 + 10;
-
-        if (ny + blockH > pageH2 - 40) {
-          doc.addPage("a4", "portrait");
-          ny = 50;
-        }
-
-        doc.setFont("helvetica", "bold").setFontSize(9.5).setTextColor(12, 35, 64);
-        doc.text(header, 30, ny);
-        doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(40, 40, 40);
-        doc.text(wrapped, 30, ny + 14);
-        ny += blockH;
-      });
-      doc.setTextColor(0, 0, 0);
-    }
 
     // ── Footer ───────────────────────────────────────────────────────────────
     const pageH = doc.internal.pageSize.getHeight();
@@ -954,6 +1082,12 @@ function DprSummary() {
             userId={user!.id}
             onChanged={() => qc.invalidateQueries({ queryKey: ["absentees", date] })}
           />
+          <VisitorsCard
+            date={date}
+            visitors={visitors}
+            userId={user!.id}
+            onChanged={() => qc.invalidateQueries({ queryKey: ["visitors", date] })}
+          />
           <RecordedByCard
             date={date}
             recorders={recorders}
@@ -1230,6 +1364,150 @@ function AbsenteesCard({
                       size="icon"
                       className="h-7 w-7 print:hidden"
                       onClick={() => delMut.mutate(a.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function VisitorsCard({
+  date,
+  visitors,
+  userId,
+  onChanged,
+}: {
+  date: string;
+  visitors: Visitor[];
+  userId: string;
+  onChanged: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [organization, setOrganization] = useState("");
+  const [purpose, setPurpose] = useState("");
+
+  const addMut = useMutation({
+    mutationFn: async () => {
+      const parsed = visitorSchema.safeParse({
+        visitor_name: name,
+        organization: organization || undefined,
+        purpose: purpose || undefined,
+        visit_date: date,
+      });
+      if (!parsed.success) throw new Error(parsed.error.issues[0].message);
+      const { error } = await supabase.from("visitors").insert({
+        visitor_name: parsed.data.visitor_name,
+        organization: parsed.data.organization ?? null,
+        purpose: parsed.data.purpose ?? null,
+        visit_date: parsed.data.visit_date,
+        created_by: userId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setName("");
+      setOrganization("");
+      setPurpose("");
+      setOpen(false);
+      onChanged();
+      toast.success("Visitor added");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const delMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("visitors").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      onChanged();
+      toast.success("Removed");
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-2">
+        <CardTitle className="min-w-max whitespace-nowrap text-base">Visitors</CardTitle>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline" className="print:hidden">
+              <Plus className="mr-1 h-3 w-3" />
+              Add
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add visitor</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label>Visitor name *</Label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div>
+                <Label>Organization</Label>
+                <Input value={organization} onChange={(e) => setOrganization(e.target.value)} />
+              </div>
+              <div>
+                <Label>Purpose</Label>
+                <Input value={purpose} onChange={(e) => setPurpose(e.target.value)} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => addMut.mutate()} disabled={!name || addMut.isPending}>
+                Save
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent className="p-0">
+        <table className="w-full text-sm">
+          <thead className="border-y border-border bg-muted/40 text-left text-xs uppercase text-muted-foreground">
+            <tr>
+              <th className="w-12 px-3 py-2">S.No</th>
+              <th className="px-3 py-2">Name</th>
+              <th className="px-3 py-2">Purpose</th>
+              <th className="w-12"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {visitors.length === 0 && (
+              <tr>
+                <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                  No visitors recorded for {format(parseISO(date), "dd MMM yyyy")}
+                </td>
+              </tr>
+            )}
+            {visitors.map((v, i) => (
+              <tr key={v.id} className="border-b border-border last:border-0">
+                <td className="px-3 py-2">{i + 1}</td>
+                <td className="px-3 py-2">
+                  {v.visitor_name}
+                  {v.organization && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      ({v.organization})
+                    </span>
+                  )}
+                </td>
+                <td className="px-3 py-2">{v.purpose ?? "—"}</td>
+                <td className="px-3 py-2 text-right">
+                  {v.created_by === userId && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 print:hidden"
+                      onClick={() => delMut.mutate(v.id)}
                     >
                       <Trash2 className="h-3.5 w-3.5 text-destructive" />
                     </Button>
