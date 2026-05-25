@@ -161,6 +161,7 @@ function DprSummary() {
     morning: "",
     afternoon: "",
   });
+  const [issues, setIssues] = useState("");
 
   const { data: entries = [] } = useQuery({
     queryKey: ["dpr-summary-entries", date],
@@ -562,6 +563,38 @@ function DprSummary() {
         6: { cellWidth: 45, halign: "center" },
         7: { cellWidth: 45, halign: "center" },
         8: { cellWidth: 50, halign: "center" },
+      },
+    });
+
+    // ── DAILY NOTES & ISSUES ─────────────────────────────────────────────────
+    const notesStartY = (doc as any).lastAutoTable.finalY + 25;
+    doc.setFillColor(12, 35, 64);
+    doc.roundedRect(30, notesStartY, w - 60, 24, 4, 4, "F");
+    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(255, 255, 255);
+    doc.text("DAILY NOTES & ISSUES", 40, notesStartY + 16);
+    doc.setTextColor(0, 0, 0);
+
+    autoTable(doc, {
+      startY: notesStartY + 32,
+      head: [["Morning Notes", "Afternoon Notes", "Issues"]],
+      body: [[notes.morning || "—", notes.afternoon || "—", issues || "—"]],
+      styles: {
+        fontSize: 9,
+        cellPadding: 6,
+        valign: "top",
+        lineColor: [220, 220, 220],
+        lineWidth: 0.4,
+      },
+      headStyles: {
+        fillColor: [45, 138, 158],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+      },
+      bodyStyles: { textColor: [40, 40, 40] },
+      columnStyles: {
+        0: { cellWidth: 170 },
+        1: { cellWidth: 170 },
+        2: { cellWidth: 185 },
       },
     });
 
@@ -1072,6 +1105,25 @@ function DprSummary() {
                 {notes.afternoon || "—"}
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Issues */}
+        <Card>
+          <CardHeader className="pb-2 print:pb-1">
+            <CardTitle className="text-base print:text-sm">Issues</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Label className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground">
+              Issues Noticed
+            </Label>
+            <Textarea
+              value={issues}
+              placeholder="Enter report-level issues noticed…"
+              onChange={(e) => setIssues(e.target.value)}
+              className="min-h-32 resize-y text-sm print:hidden"
+            />
+            <p className="hidden whitespace-pre-line print:block text-sm">{issues || "—"}</p>
           </CardContent>
         </Card>
 
