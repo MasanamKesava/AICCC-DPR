@@ -222,6 +222,7 @@ function NewEntryDialog({ onClose, userId }: { onClose: () => void; userId: stri
     output_evidence: "",
     issues_noticed: "",
     action_required: "",
+    notes: "",
     status: "open" as DprEntry["status"],
     priority: "medium" as DprEntry["priority"],
     session: "morning",
