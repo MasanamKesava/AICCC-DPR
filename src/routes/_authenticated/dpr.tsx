@@ -35,6 +35,7 @@ const entrySchema = z.object({
   output_evidence: z.string().max(1000).optional(),
   issues_noticed: z.string().max(1000).optional(),
   action_required: z.string().max(1000).optional(),
+  notes: z.string().max(2000).optional(),
   status: z.enum(["open", "in_progress", "escalated", "resolved", "closed"]),
   priority: z.enum(["low", "medium", "high", "critical"]),
   session: z.string(),
@@ -94,7 +95,7 @@ function DprPage() {
 
     autoTable(doc, {
       startY: 70,
-      head: [["Date", "Department", "Category", "Description", "Total", "Completed", "In Progress", "Status", "Priority"]],
+      head: [["Date", "Department", "Category", "Description", "Total", "Completed", "In Progress", "Status", "Priority", "Notes"]],
       body: filtered.map((e) => [
         format(new Date(e.entry_date), "dd MMM yyyy"),
         e.department,
@@ -105,10 +106,11 @@ function DprPage() {
         e.in_progress_tickets ?? 0,
         e.status.replace("_", " "),
         e.priority,
+        (e as any).notes || "—",
       ]),
       styles: { fontSize: 8, cellPadding: 4, valign: "top" },
       headStyles: { fillColor: [45, 138, 158] },
-      columnStyles: { 3: { cellWidth: 220 }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } },
+      columnStyles: { 3: { cellWidth: 180 }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" }, 9: { cellWidth: 140 } },
     });
 
     doc.save(`AICCC-DPR-Entries-${format(new Date(), "yyyy-MM-dd")}.pdf`);
@@ -220,6 +222,7 @@ function NewEntryDialog({ onClose, userId }: { onClose: () => void; userId: stri
     output_evidence: "",
     issues_noticed: "",
     action_required: "",
+    notes: "",
     status: "open" as DprEntry["status"],
     priority: "medium" as DprEntry["priority"],
     session: "morning",
@@ -288,6 +291,7 @@ function NewEntryDialog({ onClose, userId }: { onClose: () => void; userId: stri
         <div className="sm:col-span-2"><Label>Output / Evidence</Label><Textarea rows={2} value={form.output_evidence} onChange={(e) => setForm({ ...form, output_evidence: e.target.value })} /></div>
         <div className="sm:col-span-2"><Label>Issues Noticed</Label><Textarea rows={2} value={form.issues_noticed} onChange={(e) => setForm({ ...form, issues_noticed: e.target.value })} /></div>
         <div className="sm:col-span-2"><Label>Action Required</Label><Textarea rows={2} value={form.action_required} onChange={(e) => setForm({ ...form, action_required: e.target.value })} /></div>
+        <div className="sm:col-span-2"><Label>Notes (printed in PDF)</Label><Textarea rows={3} placeholder="Additional notes to appear in the downloadable PDF report…" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
       </div>
       <DialogFooter>
         <Button variant="outline" onClick={onClose}>Cancel</Button>

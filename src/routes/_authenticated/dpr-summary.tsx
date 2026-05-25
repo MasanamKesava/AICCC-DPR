@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthProvider";
@@ -305,7 +305,7 @@ function DprSummary() {
   const [vendor, setVendor] = useState<string>(initialVendor);
   const [location, setLocation] = useState<string>(initialLocation);
 
-  const downloadPdf = () => {
+  const downloadPdf = async () => {
     const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
     const w = doc.internal.pageSize.getWidth();
     doc.setFillColor(12, 35, 64);
@@ -586,12 +586,48 @@ function DprSummary() {
     doc.setFont("helvetica", "bold").setFontSize(10).text("RECORDED BY", 30, y);
     y += 15;
     doc.setFont("helvetica", "normal").setFontSize(9);
-    (["prepared_by", "reviewed_by", "approved_by"] as const).forEach((role, i) => {
-      const r = recorders.find((x) => x.role === role);
-      const x = 30 + i * ((w - 60) / 3);
+
+    // Pre-fetch signed signature URLs and convert to data URLs for embedding
+    const sigEntries = await Promise.all(
+      (["prepared_by", "reviewed_by", "approved_by"] as const).map(async (role) => {
+        const r = recorders.find((x) => x.role === role);
+        if (!r?.signature_url) return { role, recorder: r, dataUrl: null as string | null };
+        try {
+          const { data: signed } = await supabase.storage
+            .from("signatures")
+            .createSignedUrl(r.signature_url, 3600);
+          if (!signed?.signedUrl) return { role, recorder: r, dataUrl: null };
+          const resp = await fetch(signed.signedUrl);
+          const blob = await resp.blob();
+          const dataUrl: string = await new Promise((resolve, reject) => {
+            const fr = new FileReader();
+            fr.onloadend = () => resolve(fr.result as string);
+            fr.onerror = reject;
+            fr.readAsDataURL(blob);
+          });
+          return { role, recorder: r, dataUrl };
+        } catch {
+          return { role, recorder: r, dataUrl: null };
+        }
+      }),
+    );
+
+    const colW = (w - 60) / 3;
+    sigEntries.forEach(({ role, recorder: r, dataUrl }, i) => {
+      const x = 30 + i * colW;
+      doc.setFont("helvetica", "bold").setFontSize(9);
       doc.text(role.replace("_", " ").toUpperCase(), x, y);
-      doc.text(r?.name ?? "—", x, y + 14);
-      doc.text(r?.designation ?? "", x, y + 26);
+      if (dataUrl) {
+        try {
+          const fmt = dataUrl.includes("image/png") ? "PNG" : "JPEG";
+          doc.addImage(dataUrl, fmt, x, y + 4, 90, 35);
+        } catch {
+          /* ignore */
+        }
+      }
+      doc.setFont("helvetica", "normal").setFontSize(9);
+      doc.text(r?.name ?? "—", x, y + 52);
+      doc.text(r?.designation ?? "", x, y + 64);
     });
 
     doc.addPage("a4", "portrait");
@@ -630,14 +666,47 @@ function DprSummary() {
       headStyles: { fillColor: [45, 138, 158] },
       columnStyles: {
         0: { cellWidth: 45 },
-        1: { cellWidth: 90 },
-        2: { cellWidth: 55 },
-        3: { cellWidth: 170 },
+        1: { cellWidth: 80 },
+        2: { cellWidth: 50 },
+        3: { cellWidth: 180 },
         4: { halign: "right" },
         5: { halign: "right" },
         6: { halign: "right" },
       },
     });
+
+    // NOTES SECTION — separate passage block per entry
+    const notesEntries = todayEntries.filter((e) => ((e as any).notes ?? "").trim());
+    if (notesEntries.length) {
+      let ny = (doc as any).lastAutoTable.finalY + 25;
+      const pageH2 = doc.internal.pageSize.getHeight();
+
+      doc.setFillColor(12, 35, 64);
+      doc.roundedRect(30, ny, w - 60, 24, 4, 4, "F");
+      doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(255, 255, 255);
+      doc.text("NOTES", 40, ny + 16);
+      doc.setTextColor(0, 0, 0);
+      ny += 38;
+
+      notesEntries.forEach((entry, idx) => {
+        const header = `${idx + 1}. ${entry.department} — ${entry.category.toUpperCase()} (${format(new Date(entry.entry_date), "dd MMM yyyy")})`;
+        const noteText = ((entry as any).notes ?? "").toString();
+        const wrapped = doc.splitTextToSize(noteText, w - 80);
+        const blockH = 14 + wrapped.length * 11 + 10;
+
+        if (ny + blockH > pageH2 - 40) {
+          doc.addPage("a4", "portrait");
+          ny = 50;
+        }
+
+        doc.setFont("helvetica", "bold").setFontSize(9.5).setTextColor(12, 35, 64);
+        doc.text(header, 30, ny);
+        doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(40, 40, 40);
+        doc.text(wrapped, 30, ny + 14);
+        ny += blockH;
+      });
+      doc.setTextColor(0, 0, 0);
+    }
 
     const pageH = doc.internal.pageSize.getHeight();
     doc.setFontSize(7).setTextColor(120, 120, 120);
@@ -1381,14 +1450,27 @@ function RecorderSlot({
         .from("signatures")
         .upload(path, file, { upsert: true });
       if (error) throw error;
-      const { data } = supabase.storage.from("signatures").getPublicUrl(path);
-      await saveMut.mutateAsync(data.publicUrl);
+      // Store the storage path; we generate signed URLs on read.
+      await saveMut.mutateAsync(path);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
       setUploading(false);
     }
   };
+
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    const raw = recorder?.signature_url;
+    if (!raw) { setSignedUrl(null); return; }
+    if (raw.startsWith("http")) { setSignedUrl(raw); return; }
+    supabase.storage.from("signatures").createSignedUrl(raw, 3600).then(({ data }) => {
+      if (active) setSignedUrl(data?.signedUrl ?? null);
+    });
+    return () => { active = false; };
+  }, [recorder?.signature_url]);
+
 
   return (
     <div className="rounded-md border border-border p-3">
@@ -1398,8 +1480,8 @@ function RecorderSlot({
       <p className="mt-1 font-semibold">{recorder?.name ?? "—"}</p>
       <p className="text-xs text-muted-foreground">{recorder?.designation ?? ""}</p>
       <div className="mt-2 h-14 rounded border border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden">
-        {recorder?.signature_url ? (
-          <img src={recorder.signature_url} alt="signature" className="max-h-full object-contain" />
+        {signedUrl ? (
+          <img src={signedUrl} alt="signature" className="max-h-full object-contain" />
         ) : (
           <span className="text-[10px] text-muted-foreground">No signature</span>
         )}

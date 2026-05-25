@@ -1,0 +1,1 @@
+ALTER TABLE public.dpr_entries ADD COLUMN IF NOT EXISTS notes text;
