@@ -438,12 +438,48 @@ function DprSummary() {
     doc.setFont("helvetica", "bold").setFontSize(10).text("RECORDED BY", 30, y);
     y += 15;
     doc.setFont("helvetica", "normal").setFontSize(9);
-    (["prepared_by", "reviewed_by", "approved_by"] as const).forEach((role, i) => {
-      const r = recorders.find((x) => x.role === role);
-      const x = 30 + i * ((w - 60) / 3);
+
+    // Pre-fetch signed signature URLs and convert to data URLs for embedding
+    const sigEntries = await Promise.all(
+      (["prepared_by", "reviewed_by", "approved_by"] as const).map(async (role) => {
+        const r = recorders.find((x) => x.role === role);
+        if (!r?.signature_url) return { role, recorder: r, dataUrl: null as string | null };
+        try {
+          const { data: signed } = await supabase.storage
+            .from("signatures")
+            .createSignedUrl(r.signature_url, 3600);
+          if (!signed?.signedUrl) return { role, recorder: r, dataUrl: null };
+          const resp = await fetch(signed.signedUrl);
+          const blob = await resp.blob();
+          const dataUrl: string = await new Promise((resolve, reject) => {
+            const fr = new FileReader();
+            fr.onloadend = () => resolve(fr.result as string);
+            fr.onerror = reject;
+            fr.readAsDataURL(blob);
+          });
+          return { role, recorder: r, dataUrl };
+        } catch {
+          return { role, recorder: r, dataUrl: null };
+        }
+      }),
+    );
+
+    const colW = (w - 60) / 3;
+    sigEntries.forEach(({ role, recorder: r, dataUrl }, i) => {
+      const x = 30 + i * colW;
+      doc.setFont("helvetica", "bold").setFontSize(9);
       doc.text(role.replace("_", " ").toUpperCase(), x, y);
-      doc.text(r?.name ?? "—", x, y + 14);
-      doc.text(r?.designation ?? "", x, y + 26);
+      if (dataUrl) {
+        try {
+          const fmt = dataUrl.includes("image/png") ? "PNG" : "JPEG";
+          doc.addImage(dataUrl, fmt, x, y + 4, 90, 35);
+        } catch {
+          /* ignore */
+        }
+      }
+      doc.setFont("helvetica", "normal").setFontSize(9);
+      doc.text(r?.name ?? "—", x, y + 52);
+      doc.text(r?.designation ?? "", x, y + 64);
     });
 
     doc.addPage("a4", "portrait");
