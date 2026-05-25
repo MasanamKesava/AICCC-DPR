@@ -35,6 +35,7 @@ const entrySchema = z.object({
   output_evidence: z.string().max(1000).optional(),
   issues_noticed: z.string().max(1000).optional(),
   action_required: z.string().max(1000).optional(),
+  notes: z.string().max(2000).optional(),
   status: z.enum(["open", "in_progress", "escalated", "resolved", "closed"]),
   priority: z.enum(["low", "medium", "high", "critical"]),
   session: z.string(),
