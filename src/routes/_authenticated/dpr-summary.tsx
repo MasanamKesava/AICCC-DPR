@@ -504,7 +504,7 @@ function DprSummary() {
     autoTable(doc, {
       startY: 80,
       head: [
-        ["Date", "Dept", "Category", "Description", "Total", "Done", "WIP", "Status", "Priority", "Notes"],
+        ["Date", "Dept", "Category", "Description", "Total", "Done", "WIP", "Status", "Priority"],
       ],
       body: todayEntries.map((entry) => [
         format(new Date(entry.entry_date), "dd MMM"),
@@ -516,7 +516,6 @@ function DprSummary() {
         (entry as any).in_progress_tickets ?? 0,
         entry.status.replace("_", " "),
         entry.priority,
-        (entry as any).notes || "—",
       ]),
       styles: { fontSize: 7, cellPadding: 3, valign: "top" },
       headStyles: { fillColor: [45, 138, 158] },
@@ -524,13 +523,45 @@ function DprSummary() {
         0: { cellWidth: 45 },
         1: { cellWidth: 80 },
         2: { cellWidth: 50 },
-        3: { cellWidth: 130 },
+        3: { cellWidth: 180 },
         4: { halign: "right" },
         5: { halign: "right" },
         6: { halign: "right" },
-        9: { cellWidth: 90 },
       },
     });
+
+    // NOTES SECTION — separate passage block per entry
+    const notesEntries = todayEntries.filter((e) => ((e as any).notes ?? "").trim());
+    if (notesEntries.length) {
+      let ny = (doc as any).lastAutoTable.finalY + 25;
+      const pageH2 = doc.internal.pageSize.getHeight();
+
+      doc.setFillColor(12, 35, 64);
+      doc.roundedRect(30, ny, w - 60, 24, 4, 4, "F");
+      doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(255, 255, 255);
+      doc.text("NOTES", 40, ny + 16);
+      doc.setTextColor(0, 0, 0);
+      ny += 38;
+
+      notesEntries.forEach((entry, idx) => {
+        const header = `${idx + 1}. ${entry.department} — ${entry.category.toUpperCase()} (${format(new Date(entry.entry_date), "dd MMM yyyy")})`;
+        const noteText = ((entry as any).notes ?? "").toString();
+        const wrapped = doc.splitTextToSize(noteText, w - 80);
+        const blockH = 14 + wrapped.length * 11 + 10;
+
+        if (ny + blockH > pageH2 - 40) {
+          doc.addPage("a4", "portrait");
+          ny = 50;
+        }
+
+        doc.setFont("helvetica", "bold").setFontSize(9.5).setTextColor(12, 35, 64);
+        doc.text(header, 30, ny);
+        doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(40, 40, 40);
+        doc.text(wrapped, 30, ny + 14);
+        ny += blockH;
+      });
+      doc.setTextColor(0, 0, 0);
+    }
 
     const pageH = doc.internal.pageSize.getHeight();
     doc.setFontSize(7).setTextColor(120, 120, 120);
