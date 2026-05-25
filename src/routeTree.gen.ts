@@ -15,7 +15,6 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedDprSummaryRouteImport } from './routes/_authenticated/dpr-summary'
-import { Route as AuthenticatedDprRouteImport } from './routes/_authenticated/dpr'
 import { Route as AuthenticatedDepartmentsRouteImport } from './routes/_authenticated/departments'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
@@ -50,11 +49,6 @@ const AuthenticatedDprSummaryRoute = AuthenticatedDprSummaryRouteImport.update({
   path: '/dpr-summary',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedDprRoute = AuthenticatedDprRouteImport.update({
-  id: '/dpr',
-  path: '/dpr',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedDepartmentsRoute =
   AuthenticatedDepartmentsRouteImport.update({
     id: '/departments',
@@ -85,7 +79,6 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/departments': typeof AuthenticatedDepartmentsRoute
-  '/dpr': typeof AuthenticatedDprRoute
   '/dpr-summary': typeof AuthenticatedDprSummaryRoute
   '/reports': typeof AuthenticatedReportsRoute
 }
@@ -97,7 +90,6 @@ export interface FileRoutesByTo {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/departments': typeof AuthenticatedDepartmentsRoute
-  '/dpr': typeof AuthenticatedDprRoute
   '/dpr-summary': typeof AuthenticatedDprSummaryRoute
   '/reports': typeof AuthenticatedReportsRoute
 }
@@ -111,7 +103,6 @@ export interface FileRoutesById {
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/departments': typeof AuthenticatedDepartmentsRoute
-  '/_authenticated/dpr': typeof AuthenticatedDprRoute
   '/_authenticated/dpr-summary': typeof AuthenticatedDprSummaryRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
 }
@@ -125,7 +116,6 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/dashboard'
     | '/departments'
-    | '/dpr'
     | '/dpr-summary'
     | '/reports'
   fileRoutesByTo: FileRoutesByTo
@@ -137,7 +127,6 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/dashboard'
     | '/departments'
-    | '/dpr'
     | '/dpr-summary'
     | '/reports'
   id:
@@ -150,7 +139,6 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics'
     | '/_authenticated/dashboard'
     | '/_authenticated/departments'
-    | '/_authenticated/dpr'
     | '/_authenticated/dpr-summary'
     | '/_authenticated/reports'
   fileRoutesById: FileRoutesById
@@ -206,13 +194,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDprSummaryRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/dpr': {
-      id: '/_authenticated/dpr'
-      path: '/dpr'
-      fullPath: '/dpr'
-      preLoaderRoute: typeof AuthenticatedDprRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/departments': {
       id: '/_authenticated/departments'
       path: '/departments'
@@ -249,7 +230,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDepartmentsRoute: typeof AuthenticatedDepartmentsRoute
-  AuthenticatedDprRoute: typeof AuthenticatedDprRoute
   AuthenticatedDprSummaryRoute: typeof AuthenticatedDprSummaryRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
 }
@@ -259,7 +239,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDepartmentsRoute: AuthenticatedDepartmentsRoute,
-  AuthenticatedDprRoute: AuthenticatedDprRoute,
   AuthenticatedDprSummaryRoute: AuthenticatedDprSummaryRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
 }
@@ -277,3 +256,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

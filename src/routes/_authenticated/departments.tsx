@@ -1,77 +1,424 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DEPARTMENTS, CATEGORIES, type DprEntry } from "@/lib/dpr-constants";
 
-export const Route = createFileRoute("/_authenticated/departments")({ component: DeptPage });
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
+import { type DprEntry } from "@/lib/dpr-constants";
+
+export const Route = createFileRoute("/_authenticated/departments")({
+  component: DeptPage,
+});
+
+type DeptStats = {
+  department: string;
+
+  rfiReceived: number;
+  rfiPending: number;
+  rfiCompleted: number;
+
+  worklogReceived: number;
+  worklogPending: number;
+  worklogCompleted: number;
+
+  drawingReceived: number;
+  drawingPending: number;
+  drawingCompleted: number;
+
+  grandReceived: number;
+  grandPending: number;
+  grandCompleted: number;
+};
 
 function DeptPage() {
+  const [reportDate, setReportDate] = useState(new Date().toISOString().split("T")[0]);
+
   const { data: entries = [], isLoading } = useQuery({
-    queryKey: ["dpr-all"],
+    queryKey: ["department-breakdown"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("dpr_entries").select("*").limit(2000);
+      const { data, error } = await supabase.from("dpr_entries").select("*").limit(5000);
+
       if (error) throw error;
+
       return data as DprEntry[];
     },
   });
 
-  const rows = DEPARTMENTS.map((dep) => {
-    const ents = entries.filter((e) => e.department === dep);
-    const counts: Record<string, number> = {};
-    CATEGORIES.forEach((c) => { counts[c.value] = ents.filter((e) => e.category === c.value).length; });
-    const completed = ents.filter((e) => e.status === "resolved" || e.status === "closed").length;
-    return { dep, counts, total: ents.length, completed, pct: ents.length ? Math.round((completed / ents.length) * 100) : 0 };
-  });
+  const departments = [
+    "Flood Mitigation",
+    "H&B Housing",
+    "H&B Offices",
+    "LPS Infra",
+    "Trunk Infra E Roads",
+    "Trunk Infra N Roads",
+    "Water Supply",
+    "Electrical Infra",
+    "Grievance",
+  ];
 
-  const totals = CATEGORIES.reduce<Record<string, number>>((acc, c) => {
-    acc[c.value] = rows.reduce((s, r) => s + r.counts[c.value], 0);
-    return acc;
-  }, {});
-  const grandTotal = rows.reduce((s, r) => s + r.total, 0);
+  const rows: DeptStats[] = useMemo(() => {
+    return departments.map((department) => {
+      const deptEntries = entries.filter((e) => e.department === department);
+
+      const getCounts = (category: string) => {
+        const categoryEntries = deptEntries.filter(
+          (e) => e.category?.toLowerCase() === category.toLowerCase(),
+        );
+
+        const received = categoryEntries.length;
+
+        const completed = categoryEntries.filter(
+          (e) => e.status === "resolved" || e.status === "closed",
+        ).length;
+
+        const pending = received - completed;
+
+        return {
+          received,
+          pending,
+          completed,
+        };
+      };
+
+      const rfi = getCounts("rfi");
+      const worklog = getCounts("worklog");
+      const drawing = getCounts("drawing");
+
+      return {
+        department,
+
+        rfiReceived: rfi.received,
+        rfiPending: rfi.pending,
+        rfiCompleted: rfi.completed,
+
+        worklogReceived: worklog.received,
+        worklogPending: worklog.pending,
+        worklogCompleted: worklog.completed,
+
+        drawingReceived: drawing.received,
+        drawingPending: drawing.pending,
+        drawingCompleted: drawing.completed,
+
+        grandReceived: rfi.received + worklog.received + drawing.received,
+
+        grandPending: rfi.pending + worklog.pending + drawing.pending,
+
+        grandCompleted: rfi.completed + worklog.completed + drawing.completed,
+      };
+    });
+  }, [entries]);
+
+  const [editableRows, setEditableRows] = useState<DeptStats[]>(rows);
+
+  useMemo(() => {
+    setEditableRows(rows);
+  }, [rows]);
+
+  const handleChange = (index: number, field: keyof DeptStats, value: string) => {
+    const updated = [...editableRows];
+
+    updated[index] = {
+      ...updated[index],
+      [field]: field === "department" ? value : Number(value),
+    };
+
+    updated[index].grandReceived =
+      updated[index].rfiReceived + updated[index].worklogReceived + updated[index].drawingReceived;
+
+    updated[index].grandPending =
+      updated[index].rfiPending + updated[index].worklogPending + updated[index].drawingPending;
+
+    updated[index].grandCompleted =
+      updated[index].rfiCompleted +
+      updated[index].worklogCompleted +
+      updated[index].drawingCompleted;
+
+    setEditableRows(updated);
+  };
+
+  const sectionTotals = useMemo(() => {
+    return editableRows.reduce(
+      (acc, row) => ({
+        rfiReceived: acc.rfiReceived + row.rfiReceived,
+
+        rfiPending: acc.rfiPending + row.rfiPending,
+
+        rfiCompleted: acc.rfiCompleted + row.rfiCompleted,
+
+        worklogReceived: acc.worklogReceived + row.worklogReceived,
+
+        worklogPending: acc.worklogPending + row.worklogPending,
+
+        worklogCompleted: acc.worklogCompleted + row.worklogCompleted,
+
+        drawingReceived: acc.drawingReceived + row.drawingReceived,
+
+        drawingPending: acc.drawingPending + row.drawingPending,
+
+        drawingCompleted: acc.drawingCompleted + row.drawingCompleted,
+
+        grandReceived: acc.grandReceived + row.grandReceived,
+
+        grandPending: acc.grandPending + row.grandPending,
+
+        grandCompleted: acc.grandCompleted + row.grandCompleted,
+      }),
+      {
+        rfiReceived: 0,
+        rfiPending: 0,
+        rfiCompleted: 0,
+
+        worklogReceived: 0,
+        worklogPending: 0,
+        worklogCompleted: 0,
+
+        drawingReceived: 0,
+        drawingPending: 0,
+        drawingCompleted: 0,
+
+        grandReceived: 0,
+        grandPending: 0,
+        grandCompleted: 0,
+      },
+    );
+  }, [editableRows]);
+
+  const downloadPDF = () => {
+    const doc = new jsPDF("landscape");
+
+    doc.setFontSize(16);
+    doc.text("Department Performance Summary", 14, 15);
+
+    doc.setFontSize(11);
+    doc.text(`Date: ${reportDate}`, 14, 24);
+
+    autoTable(doc, {
+      startY: 30,
+      styles: {
+        fontSize: 7,
+        cellPadding: 2,
+      },
+
+      head: [
+        [
+          "Department",
+
+          "RFI Rec",
+          "RFI Pen",
+          "RFI Comp",
+
+          "WL Rec",
+          "WL Pen",
+          "WL Comp",
+
+          "DR Rec",
+          "DR Pen",
+          "DR Comp",
+
+          "GT Rec",
+          "GT Pen",
+          "GT Comp",
+        ],
+      ],
+
+      body: editableRows.map((row) => [
+        row.department,
+
+        row.rfiReceived,
+        row.rfiPending,
+        row.rfiCompleted,
+
+        row.worklogReceived,
+        row.worklogPending,
+        row.worklogCompleted,
+
+        row.drawingReceived,
+        row.drawingPending,
+        row.drawingCompleted,
+
+        row.grandReceived,
+        row.grandPending,
+        row.grandCompleted,
+      ]),
+
+      foot: [
+        [
+          "Totals",
+
+          sectionTotals.rfiReceived,
+          sectionTotals.rfiPending,
+          sectionTotals.rfiCompleted,
+
+          sectionTotals.worklogReceived,
+          sectionTotals.worklogPending,
+          sectionTotals.worklogCompleted,
+
+          sectionTotals.drawingReceived,
+          sectionTotals.drawingPending,
+          sectionTotals.drawingCompleted,
+
+          sectionTotals.grandReceived,
+          sectionTotals.grandPending,
+          sectionTotals.grandCompleted,
+        ],
+      ],
+    });
+
+    doc.save("Department-Performance.pdf");
+  };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Department Summary</h1>
-        <p className="text-sm text-muted-foreground">Auto-aggregated counts across all DPR entries.</p>
+    <div className="space-y-4 p-4">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Department Breakdown Performance</h1>
+
+          <p className="text-sm text-muted-foreground">DPR department wise summary report</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <input
+            type="date"
+            value={reportDate}
+            onChange={(e) => setReportDate(e.target.value)}
+            className="border rounded-md px-3 py-2 text-sm"
+          />
+
+          <Button onClick={downloadPDF}>Download PDF</Button>
+        </div>
       </div>
-      <Card>
-        <CardHeader><CardTitle className="text-base">Counts by category</CardTitle></CardHeader>
+
+      {/* Table */}
+      <Card className="overflow-hidden">
+        <CardHeader className="py-3">
+          <CardTitle className="text-base">Department Performance Summary</CardTitle>
+        </CardHeader>
+
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b bg-muted/50 text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3 text-left">Department</th>
-                  {CATEGORIES.map((c) => <th key={c.value} className="px-4 py-3 text-center">{c.label}</th>)}
-                  <th className="px-4 py-3 text-center">Total</th>
-                  <th className="px-4 py-3 text-center">Completion</th>
+            <table className="w-full border-collapse text-xs">
+              {/* Header */}
+              <thead>
+                <tr className="bg-gray-100">
+                  <th rowSpan={2} className="border px-3 py-2 text-center min-w-[170px]">
+                    Department
+                  </th>
+
+                  <th colSpan={3} className="border px-2 py-2 bg-orange-50">
+                    RFI
+                  </th>
+
+                  <th colSpan={3} className="border px-2 py-2 bg-green-50">
+                    WorkLogs
+                  </th>
+
+                  <th colSpan={3} className="border px-2 py-2 bg-blue-50">
+                    Drawings
+                  </th>
+
+                  <th colSpan={3} className="border px-2 py-2 bg-purple-50">
+                    Grand Total
+                  </th>
+                </tr>
+
+                <tr className="bg-muted/40">
+                  {Array(4)
+                    .fill(["Received", "Pending", "Completed"])
+                    .flat()
+                    .map((label, i) => (
+                      <th key={i} className="border px-2 py-1 text-center text-[10px]">
+                        {label}
+                      </th>
+                    ))}
                 </tr>
               </thead>
+
+              {/* Body */}
               <tbody>
-                {isLoading && <tr><td colSpan={CATEGORIES.length + 3} className="p-6 text-center text-muted-foreground">Loading…</td></tr>}
-                {!isLoading && rows.map((r) => (
-                  <tr key={r.dep} className="border-b last:border-0 hover:bg-muted/30">
-                    <td className="px-4 py-3 font-medium">{r.dep}</td>
-                    {CATEGORIES.map((c) => <td key={c.value} className="px-4 py-3 text-center">{r.counts[c.value]}</td>)}
-                    <td className="px-4 py-3 text-center font-semibold">{r.total}</td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="h-2 w-20 overflow-hidden rounded-full bg-muted">
-                          <div className="h-full bg-success" style={{ width: `${r.pct}%` }} />
-                        </div>
-                        <span className="text-xs text-muted-foreground w-10 text-right">{r.pct}%</span>
-                      </div>
+                {isLoading && (
+                  <tr>
+                    <td colSpan={13} className="text-center py-8">
+                      Loading...
                     </td>
                   </tr>
-                ))}
-                <tr className="bg-primary/5 font-semibold">
-                  <td className="px-4 py-3">Grand Total</td>
-                  {CATEGORIES.map((c) => <td key={c.value} className="px-4 py-3 text-center">{totals[c.value]}</td>)}
-                  <td className="px-4 py-3 text-center">{grandTotal}</td>
-                  <td className="px-4 py-3"></td>
-                </tr>
+                )}
+
+                {!isLoading &&
+                  editableRows.map((row, index) => (
+                    <tr key={row.department} className="hover:bg-muted/20">
+                      <td className="border px-2 py-2 font-medium">{row.department}</td>
+
+                      {(
+                        [
+                          "rfiReceived",
+                          "rfiPending",
+                          "rfiCompleted",
+
+                          "worklogReceived",
+                          "worklogPending",
+                          "worklogCompleted",
+
+                          "drawingReceived",
+                          "drawingPending",
+                          "drawingCompleted",
+
+                          "grandReceived",
+                          "grandPending",
+                          "grandCompleted",
+                        ] as (keyof DeptStats)[]
+                      ).map((field) => (
+                        <td key={field} className="border px-1 py-1 text-center">
+                          <input
+                            type="number"
+                            value={row[field]}
+                            onChange={(e) => handleChange(index, field, e.target.value)}
+                            className="w-14 border rounded px-1 py-1 text-center"
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+
+                {/* Totals */}
+                {!isLoading && (
+                  <tr className="bg-gray-100 font-bold">
+                    <td className="border px-2 py-2">Section Totals</td>
+
+                    <td className="border text-center">{sectionTotals.rfiReceived}</td>
+
+                    <td className="border text-center">{sectionTotals.rfiPending}</td>
+
+                    <td className="border text-center">{sectionTotals.rfiCompleted}</td>
+
+                    <td className="border text-center">{sectionTotals.worklogReceived}</td>
+
+                    <td className="border text-center">{sectionTotals.worklogPending}</td>
+
+                    <td className="border text-center">{sectionTotals.worklogCompleted}</td>
+
+                    <td className="border text-center">{sectionTotals.drawingReceived}</td>
+
+                    <td className="border text-center">{sectionTotals.drawingPending}</td>
+
+                    <td className="border text-center">{sectionTotals.drawingCompleted}</td>
+
+                    <td className="border text-center text-purple-700">
+                      {sectionTotals.grandReceived}
+                    </td>
+
+                    <td className="border text-center">{sectionTotals.grandPending}</td>
+
+                    <td className="border text-center text-green-700">
+                      {sectionTotals.grandCompleted}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

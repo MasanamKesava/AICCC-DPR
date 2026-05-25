@@ -1010,7 +1010,7 @@ function DprSummary() {
         </Card>
 
         {/* Grand Total */}
-        <Card>
+        {/* <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Grand Total Summary</CardTitle>
           </CardHeader>
@@ -1057,7 +1057,7 @@ function DprSummary() {
               </table>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         <div className="grid gap-4 lg:grid-cols-2">
           <AbsenteesCard
