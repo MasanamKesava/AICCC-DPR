@@ -95,7 +95,7 @@ function DprPage() {
 
     autoTable(doc, {
       startY: 70,
-      head: [["Date", "Department", "Category", "Description", "Total", "Completed", "In Progress", "Status", "Priority"]],
+      head: [["Date", "Department", "Category", "Description", "Total", "Completed", "In Progress", "Status", "Priority", "Notes"]],
       body: filtered.map((e) => [
         format(new Date(e.entry_date), "dd MMM yyyy"),
         e.department,
@@ -106,10 +106,11 @@ function DprPage() {
         e.in_progress_tickets ?? 0,
         e.status.replace("_", " "),
         e.priority,
+        (e as any).notes || "—",
       ]),
       styles: { fontSize: 8, cellPadding: 4, valign: "top" },
       headStyles: { fillColor: [45, 138, 158] },
-      columnStyles: { 3: { cellWidth: 220 }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } },
+      columnStyles: { 3: { cellWidth: 180 }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" }, 9: { cellWidth: 140 } },
     });
 
     doc.save(`AICCC-DPR-Entries-${format(new Date(), "yyyy-MM-dd")}.pdf`);
