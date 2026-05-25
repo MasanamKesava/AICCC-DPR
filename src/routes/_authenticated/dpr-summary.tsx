@@ -285,7 +285,7 @@ function DprSummary() {
   const [vendor, setVendor] = useState<string>(initialVendor);
   const [location, setLocation] = useState<string>(initialLocation);
 
-  const downloadPdf = () => {
+  const downloadPdf = async () => {
     const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
     const w = doc.internal.pageSize.getWidth();
     doc.setFillColor(12, 35, 64);
