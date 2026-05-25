@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -113,9 +113,10 @@ function DeptPage() {
     });
   }, [entries]);
 
-  const [editableRows, setEditableRows] = useState<DeptStats[]>(rows);
+  /* FIXED INFINITE RENDER ISSUE */
+  const [editableRows, setEditableRows] = useState<DeptStats[]>([]);
 
-  useMemo(() => {
+  useEffect(() => {
     setEditableRows(rows);
   }, [rows]);
 
@@ -191,17 +192,37 @@ function DeptPage() {
   const downloadPDF = () => {
     const doc = new jsPDF("landscape");
 
-    doc.setFontSize(16);
-    doc.text("Department Performance Summary", 14, 15);
+    doc.setFillColor(12, 35, 64);
+    doc.rect(0, 0, 300, 30, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.text("AICCC - Department Performance Summary", 14, 18);
+
+    doc.setTextColor(0, 0, 0);
 
     doc.setFontSize(11);
-    doc.text(`Date: ${reportDate}`, 14, 24);
+    doc.text(`Date: ${reportDate}`, 14, 40);
 
     autoTable(doc, {
-      startY: 30,
+      startY: 50,
+
       styles: {
         fontSize: 7,
-        cellPadding: 2,
+        cellPadding: 3,
+        halign: "center",
+      },
+
+      headStyles: {
+        fillColor: [45, 138, 158],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+      },
+
+      footStyles: {
+        fillColor: [220, 220, 220],
+        textColor: [0, 0, 0],
+        fontStyle: "bold",
       },
 
       head: [
@@ -248,7 +269,7 @@ function DeptPage() {
 
       foot: [
         [
-          "Totals",
+          "TOTALS",
 
           sectionTotals.rfiReceived,
           sectionTotals.rfiPending,
@@ -275,11 +296,11 @@ function DeptPage() {
   return (
     <div className="space-y-4 p-4">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Department Breakdown Performance</h1>
 
-          <p className="text-sm text-muted-foreground">DPR department wise summary report</p>
+          <p className="text-sm text-muted-foreground">DPR Department Wise Summary Report</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -287,7 +308,7 @@ function DeptPage() {
             type="date"
             value={reportDate}
             onChange={(e) => setReportDate(e.target.value)}
-            className="border rounded-md px-3 py-2 text-sm"
+            className="rounded-md border px-3 py-2 text-sm"
           />
 
           <Button onClick={downloadPDF}>Download PDF</Button>
@@ -303,26 +324,25 @@ function DeptPage() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-xs">
-              {/* Header */}
               <thead>
                 <tr className="bg-gray-100">
-                  <th rowSpan={2} className="border px-3 py-2 text-center min-w-[170px]">
+                  <th rowSpan={2} className="min-w-[170px] border px-3 py-2 text-center">
                     Department
                   </th>
 
-                  <th colSpan={3} className="border px-2 py-2 bg-orange-50">
+                  <th colSpan={3} className="border bg-orange-50 px-2 py-2">
                     RFI
                   </th>
 
-                  <th colSpan={3} className="border px-2 py-2 bg-green-50">
+                  <th colSpan={3} className="border bg-green-50 px-2 py-2">
                     WorkLogs
                   </th>
 
-                  <th colSpan={3} className="border px-2 py-2 bg-blue-50">
+                  <th colSpan={3} className="border bg-blue-50 px-2 py-2">
                     Drawings
                   </th>
 
-                  <th colSpan={3} className="border px-2 py-2 bg-purple-50">
+                  <th colSpan={3} className="border bg-purple-50 px-2 py-2">
                     Grand Total
                   </th>
                 </tr>
@@ -339,11 +359,10 @@ function DeptPage() {
                 </tr>
               </thead>
 
-              {/* Body */}
               <tbody>
                 {isLoading && (
                   <tr>
-                    <td colSpan={13} className="text-center py-8">
+                    <td colSpan={13} className="py-8 text-center">
                       Loading...
                     </td>
                   </tr>
@@ -378,14 +397,13 @@ function DeptPage() {
                             type="number"
                             value={row[field]}
                             onChange={(e) => handleChange(index, field, e.target.value)}
-                            className="w-14 border rounded px-1 py-1 text-center"
+                            className="w-16 rounded border px-1 py-1 text-center"
                           />
                         </td>
                       ))}
                     </tr>
                   ))}
 
-                {/* Totals */}
                 {!isLoading && (
                   <tr className="bg-gray-100 font-bold">
                     <td className="border px-2 py-2">Section Totals</td>

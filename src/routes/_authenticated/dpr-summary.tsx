@@ -146,7 +146,6 @@ function DprSummary() {
     afternoon: "",
   });
 
-  
   const { data: entries = [] } = useQuery({
     queryKey: ["dpr-summary-entries", date],
     queryFn: async () => {
@@ -214,8 +213,6 @@ function DprSummary() {
     return days;
   }, [entries, date]);
 
-  // Single source of truth: per-section stats derived from today's entries.
-  // Used by Activity Log rows, Grand Total Summary, chart, and PDF.
   const sectionStats = useMemo(() => computeSectionStats(todayEntries), [todayEntries]);
 
   const ticketBreakdown = sectionStats.map((s) => {
@@ -308,6 +305,8 @@ function DprSummary() {
   const downloadPdf = async () => {
     const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
     const w = doc.internal.pageSize.getWidth();
+
+    // ── Header band ──────────────────────────────────────────────────────────
     doc.setFillColor(12, 35, 64);
     doc.rect(0, 0, w, 60, "F");
     doc.setTextColor(255, 255, 255);
@@ -324,27 +323,16 @@ function DprSummary() {
     doc.text(`Vendor: ${vendor}  ·  Site: ${location}`, w - 30, 46, { align: "right" });
     doc.setTextColor(0, 0, 0);
 
-    /* =========================================================
-   TICKET SUMMARY SECTION
-========================================================= */
-
+    // ── TICKET SUMMARY ───────────────────────────────────────────────────────
     doc.setFillColor(12, 35, 64);
-
     doc.roundedRect(30, 75, w - 60, 24, 4, 4, "F");
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(255, 255, 255);
-
+    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(255, 255, 255);
     doc.text("TICKET SUMMARY", 40, 91);
-
     doc.setTextColor(0, 0, 0);
 
     autoTable(doc, {
       startY: 108,
-
       head: [["Total Tickets", "Completed", "In Progress", "Delayed / Open"]],
-
       body: [
         [
           manualRows["Tickets"].total || counts.tot,
@@ -353,7 +341,6 @@ function DprSummary() {
           counts.delayed,
         ],
       ],
-
       styles: {
         fontSize: 9,
         cellPadding: 6,
@@ -362,49 +349,27 @@ function DprSummary() {
         lineColor: [220, 220, 220],
         lineWidth: 0.5,
       },
-
       headStyles: {
         fillColor: [45, 138, 158],
         textColor: [255, 255, 255],
         fontStyle: "bold",
         halign: "center",
       },
-
-      bodyStyles: {
-        textColor: [40, 40, 40],
-      },
-
-      alternateRowStyles: {
-        fillColor: [248, 250, 252],
-      },
+      bodyStyles: { textColor: [40, 40, 40] },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
     });
 
-    /* =========================================================
-   DPR ACTIVITY LOG SECTION
-========================================================= */
-
+    // ── DPR ACTIVITY LOG ─────────────────────────────────────────────────────
     const dprStartY = (doc as any).lastAutoTable.finalY + 25;
 
-    // Section Heading
     doc.setFillColor(12, 35, 64);
-
     doc.roundedRect(30, dprStartY, w - 60, 24, 4, 4, "F");
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(255, 255, 255);
-
+    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(255, 255, 255);
     doc.text("DPR — ACTIVITY LOG", 40, dprStartY + 16);
-
     doc.setTextColor(0, 0, 0);
-
-    /* =========================================================
-   DPR TABLE
-========================================================= */
 
     autoTable(doc, {
       startY: dprStartY + 32,
-
       head: [
         [
           "Sl",
@@ -416,7 +381,6 @@ function DprSummary() {
           "Action Required",
         ],
       ],
-
       body: dprRows.map((r, i) => [
         i + 1,
         r.title,
@@ -426,7 +390,6 @@ function DprSummary() {
         r.issues || "—",
         r.action || "—",
       ]),
-
       styles: {
         fontSize: 8,
         cellPadding: 4,
@@ -434,80 +397,73 @@ function DprSummary() {
         lineColor: [220, 220, 220],
         lineWidth: 0.4,
       },
-
       headStyles: {
         fillColor: [45, 138, 158],
         textColor: [255, 255, 255],
         fontStyle: "bold",
       },
-
-      alternateRowStyles: {
-        fillColor: [248, 250, 252],
-      },
-
-      bodyStyles: {
-        textColor: [40, 40, 40],
-      },
-
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      bodyStyles: { textColor: [40, 40, 40] },
       columnStyles: {
-        0: {
-          cellWidth: 22,
-          halign: "center",
-        },
-
-        1: {
-          cellWidth: 55,
-        },
-
-        2: {
-          cellWidth: 120,
-        },
-
-        3: {
-          cellWidth: 90,
-        },
-
-        4: {
-          cellWidth: 90,
-        },
-
-        5: {
-          cellWidth: 90,
-        },
-
-        6: {
-          cellWidth: 90,
-        },
+        0: { cellWidth: 22, halign: "center" },
+        1: { cellWidth: 55 },
+        2: { cellWidth: 120 },
+        3: { cellWidth: 90 },
+        4: { cellWidth: 90 },
+        5: { cellWidth: 90 },
+        6: { cellWidth: 90 },
       },
     });
 
-    /* =========================================================
-   ABSENTEE DETAILS SECTION
-========================================================= */
+    // ── DAILY NOTES (Morning / Afternoon) ────────────────────────────────────
+    // Always included in PDF. Shows "—" when empty so the section is always visible.
+    const notesSecY = (doc as any).lastAutoTable.finalY + 25;
 
-    const absStartY = (doc as any).lastAutoTable.finalY + 25;
-
-    // Section Heading Background
     doc.setFillColor(12, 35, 64);
-
-    doc.roundedRect(30, absStartY, w - 60, 24, 4, 4, "F");
-
-    // Heading Text
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(255, 255, 255);
-
-    doc.text("ABSENTEE DETAILS", 40, absStartY + 16);
-
-    // Reset text color
+    doc.roundedRect(30, notesSecY, w - 60, 24, 4, 4, "F");
+    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(255, 255, 255);
+    doc.text("DAILY NOTES", 40, notesSecY + 16);
     doc.setTextColor(0, 0, 0);
 
-    // Absentee Table
+    autoTable(doc, {
+      startY: notesSecY + 32,
+      head: [["Session", "Notes"]],
+      body: [
+        ["Morning", notes.morning.trim() || "—"],
+        ["Afternoon", notes.afternoon.trim() || "—"],
+      ],
+      styles: {
+        fontSize: 9,
+        cellPadding: 6,
+        valign: "top",
+        lineColor: [220, 220, 220],
+        lineWidth: 0.4,
+      },
+      headStyles: {
+        fillColor: [45, 138, 158],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+      },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      bodyStyles: { textColor: [40, 40, 40] },
+      columnStyles: {
+        0: { cellWidth: 90, fontStyle: "bold" },
+        1: { cellWidth: "auto" },
+      },
+    });
+
+    // ── ABSENTEE DETAILS ─────────────────────────────────────────────────────
+    const absStartY = (doc as any).lastAutoTable.finalY + 25;
+
+    doc.setFillColor(12, 35, 64);
+    doc.roundedRect(30, absStartY, w - 60, 24, 4, 4, "F");
+    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(255, 255, 255);
+    doc.text("ABSENTEE DETAILS", 40, absStartY + 16);
+    doc.setTextColor(0, 0, 0);
+
     autoTable(doc, {
       startY: absStartY + 32,
-
       head: [["Sl.No", "Employee Name", "Department", "Designation", "Absent Date"]],
-
       body: absentees.length
         ? absentees.map((a, i) => [
             i + 1,
@@ -517,7 +473,6 @@ function DprSummary() {
             format(parseISO(a.absent_date), "dd MMM yyyy"),
           ])
         : [["—", "No absentees recorded", "", "", ""]],
-
       styles: {
         fontSize: 9,
         cellPadding: 5,
@@ -525,111 +480,72 @@ function DprSummary() {
         lineColor: [220, 220, 220],
         lineWidth: 0.4,
       },
-
       headStyles: {
         fillColor: [45, 138, 158],
         textColor: [255, 255, 255],
         fontStyle: "bold",
         halign: "center",
       },
-
-      alternateRowStyles: {
-        fillColor: [248, 250, 252],
-      },
-
-      bodyStyles: {
-        textColor: [40, 40, 40],
-      },
-
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      bodyStyles: { textColor: [40, 40, 40] },
       columnStyles: {
-        0: {
-          cellWidth: 45,
-          halign: "center",
-        },
-
-        1: {
-          cellWidth: 170,
-        },
-
-        2: {
-          cellWidth: 120,
-        },
-
-        3: {
-          cellWidth: 120,
-        },
-
-        4: {
-          cellWidth: 90,
-          halign: "center",
-        },
+        0: { cellWidth: 45, halign: "center" },
+        1: { cellWidth: 170 },
+        2: { cellWidth: 120 },
+        3: { cellWidth: 120 },
+        4: { cellWidth: 90, halign: "center" },
       },
     });
-    // autoTable(doc, {
-    //   startY: (doc as any).lastAutoTable.finalY + 15,
-    //   head: [["Sl", "Name", "Department", "Designation", "Date"]],
-    //   body: absentees.length
-    //     ? absentees.map((a, i) => [
-    //         i + 1,
-    //         a.employee_name,
-    //         a.department ?? "—",
-    //         a.designation ?? "—",
-    //         format(parseISO(a.absent_date), "dd MMM yyyy"),
-    //       ])
-    //     : [["—", "No absentees recorded", "", "", ""]],
-    //   styles: { fontSize: 9, cellPadding: 4 },
-    //   headStyles: { fillColor: [12, 35, 64] },
-    //   columnStyles: { 0: { cellWidth: 28 } },
+
+    // ── RECORDED BY ──────────────────────────────────────────────────────────
+    // let y = (doc as any).lastAutoTable.finalY + 25;
+    // doc.setFont("helvetica", "bold").setFontSize(10).text("RECORDED BY", 30, y);
+    // y += 15;
+    // doc.setFont("helvetica", "normal").setFontSize(9);
+
+    // const sigEntries = await Promise.all(
+    //   (["prepared_by", "reviewed_by", "approved_by"] as const).map(async (role) => {
+    //     const r = recorders.find((x) => x.role === role);
+    //     if (!r?.signature_url) return { role, recorder: r, dataUrl: null as string | null };
+    //     try {
+    //       const { data: signed } = await supabase.storage
+    //         .from("signatures")
+    //         .createSignedUrl(r.signature_url, 3600);
+    //       if (!signed?.signedUrl) return { role, recorder: r, dataUrl: null };
+    //       const resp = await fetch(signed.signedUrl);
+    //       const blob = await resp.blob();
+    //       const dataUrl: string = await new Promise((resolve, reject) => {
+    //         const fr = new FileReader();
+    //         fr.onloadend = () => resolve(fr.result as string);
+    //         fr.onerror = reject;
+    //         fr.readAsDataURL(blob);
+    //       });
+    //       return { role, recorder: r, dataUrl };
+    //     } catch {
+    //       return { role, recorder: r, dataUrl: null };
+    //     }
+    //   }),
+    // );
+
+    // const colW = (w - 60) / 3;
+    // sigEntries.forEach(({ role, recorder: r, dataUrl }, i) => {
+    //   const x = 30 + i * colW;
+    //   doc.setFont("helvetica", "bold").setFontSize(9);
+    //   doc.text(role.replace("_", " ").toUpperCase(), x, y);
+    //   if (dataUrl) {
+    //     try {
+    //       const fmt = dataUrl.includes("image/png") ? "PNG" : "JPEG";
+    //       doc.addImage(dataUrl, fmt, x, y + 4, 90, 35);
+    //     } catch {
+    //       /* ignore */
+    //     }
+    //   }
+    //   doc.setFont("helvetica", "normal").setFontSize(9);
+    //   doc.text(r?.name ?? "—", x, y + 52);
+    //   doc.text(r?.designation ?? "", x, y + 64);
     // });
 
-    let y = (doc as any).lastAutoTable.finalY + 25;
-    doc.setFont("helvetica", "bold").setFontSize(10).text("RECORDED BY", 30, y);
-    y += 15;
-    doc.setFont("helvetica", "normal").setFontSize(9);
-
-    // Pre-fetch signed signature URLs and convert to data URLs for embedding
-    const sigEntries = await Promise.all(
-      (["prepared_by", "reviewed_by", "approved_by"] as const).map(async (role) => {
-        const r = recorders.find((x) => x.role === role);
-        if (!r?.signature_url) return { role, recorder: r, dataUrl: null as string | null };
-        try {
-          const { data: signed } = await supabase.storage
-            .from("signatures")
-            .createSignedUrl(r.signature_url, 3600);
-          if (!signed?.signedUrl) return { role, recorder: r, dataUrl: null };
-          const resp = await fetch(signed.signedUrl);
-          const blob = await resp.blob();
-          const dataUrl: string = await new Promise((resolve, reject) => {
-            const fr = new FileReader();
-            fr.onloadend = () => resolve(fr.result as string);
-            fr.onerror = reject;
-            fr.readAsDataURL(blob);
-          });
-          return { role, recorder: r, dataUrl };
-        } catch {
-          return { role, recorder: r, dataUrl: null };
-        }
-      }),
-    );
-
-    const colW = (w - 60) / 3;
-    sigEntries.forEach(({ role, recorder: r, dataUrl }, i) => {
-      const x = 30 + i * colW;
-      doc.setFont("helvetica", "bold").setFontSize(9);
-      doc.text(role.replace("_", " ").toUpperCase(), x, y);
-      if (dataUrl) {
-        try {
-          const fmt = dataUrl.includes("image/png") ? "PNG" : "JPEG";
-          doc.addImage(dataUrl, fmt, x, y + 4, 90, 35);
-        } catch {
-          /* ignore */
-        }
-      }
-      doc.setFont("helvetica", "normal").setFontSize(9);
-      doc.text(r?.name ?? "—", x, y + 52);
-      doc.text(r?.designation ?? "", x, y + 64);
-    });
-
+    // ── PAGE 2: RAW DATA ─────────────────────────────────────────────────────
     doc.addPage("a4", "portrait");
     doc.setFillColor(12, 35, 64);
     doc.rect(0, 0, w, 60, "F");
@@ -708,6 +624,7 @@ function DprSummary() {
       doc.setTextColor(0, 0, 0);
     }
 
+    // ── Footer ───────────────────────────────────────────────────────────────
     const pageH = doc.internal.pageSize.getHeight();
     doc.setFontSize(7).setTextColor(120, 120, 120);
     doc.text(
@@ -834,7 +751,6 @@ function DprSummary() {
               {/* Total Tickets */}
               <div>
                 <Label>Total Tickets</Label>
-
                 <Input
                   type="number"
                   min="0"
@@ -848,7 +764,6 @@ function DprSummary() {
               {/* Completed */}
               <div>
                 <Label>Completed</Label>
-
                 <Input
                   type="number"
                   min="0"
@@ -862,7 +777,6 @@ function DprSummary() {
               {/* In Progress */}
               <div>
                 <Label>In Progress</Label>
-
                 <Input
                   type="number"
                   min="0"
@@ -875,6 +789,7 @@ function DprSummary() {
             </div>
           </CardContent>
         </Card>
+
         {/* Printable Ticket Summary */}
         <div className="hidden print:block mb-4">
           <div className="rounded-md border border-black p-3">
@@ -883,12 +798,10 @@ function DprSummary() {
                 <p className="font-semibold">Total Tickets</p>
                 <p>{manualRows["Tickets"].total || counts.tot}</p>
               </div>
-
               <div>
                 <p className="font-semibold">Completed</p>
                 <p>{manualRows["Tickets"].completed || counts.completed}</p>
               </div>
-
               <div>
                 <p className="font-semibold">In Progress</p>
                 <p>{manualRows["Tickets"].inProgress || counts.inProgress}</p>
@@ -896,42 +809,35 @@ function DprSummary() {
             </div>
           </div>
         </div>
+
         {/* Main DPR table */}
         <Card>
           <CardHeader className="pb-2 print:pb-1">
             <CardTitle className="text-base print:text-sm">DPR — Activity Log</CardTitle>
           </CardHeader>
-
           <CardContent className="p-0">
             <div className="overflow-x-auto print:overflow-visible">
               <table className="w-full border-collapse text-[11px] print:text-[9px] leading-relaxed">
-                {" "}
                 <thead>
                   <tr className="bg-gray-200 text-center">
                     <th className="border border-black px-2 py-3 font-bold w-[40px] print:w-[30px]">
                       Sl.No
                     </th>
-
                     <th className="border border-black px-2 py-3 font-bold w-[80px] print:w-[60px]">
                       Title
                     </th>
-
                     <th className="border border-black px-3 py-3 font-bold w-[240px] print:w-[180px]">
                       Activity Done Today
                     </th>
-
                     <th className="border border-black px-3 py-3 font-bold w-[140px] print:w-[110px]">
                       Person Responsible
                     </th>
-
                     <th className="border border-black px-3 py-3 font-bold w-[150px] print:w-[120px]">
                       Output / Evidence
                     </th>
-
                     <th className="border border-black px-3 py-3 font-bold w-[150px] print:w-[120px]">
                       Issues Noticed
                     </th>
-
                     <th className="border border-black px-3 py-3 font-bold w-[150px] print:w-[120px]">
                       Action Required
                     </th>
@@ -943,11 +849,9 @@ function DprSummary() {
                       <td className="border border-black px-2 py-3 text-center align-top whitespace-pre-line">
                         {i + 1}
                       </td>
-
                       <td className="border border-black px-2 py-3 font-semibold align-top">
                         {r.title}
                       </td>
-
                       <td className="border border-black px-3 py-3 align-top whitespace-pre-line">
                         {r.title === "Tickets" ? (
                           <EditableActivityCell
@@ -969,7 +873,6 @@ function DprSummary() {
                           />
                         )}
                       </td>
-
                       <td className="border border-black px-3 py-3 align-top whitespace-pre-line">
                         <EditableTextCell
                           value={manualRows[r.title].people}
@@ -977,7 +880,6 @@ function DprSummary() {
                           onChange={(value) => updateManualRow(r.title, "people", value)}
                         />
                       </td>
-
                       <td className="border border-black px-3 py-3 align-top whitespace-pre-line">
                         <EditableTextCell
                           value={manualRows[r.title].evidence}
@@ -985,7 +887,6 @@ function DprSummary() {
                           onChange={(value) => updateManualRow(r.title, "evidence", value)}
                         />
                       </td>
-
                       <td className="border border-black px-3 py-3 align-top whitespace-pre-line">
                         <EditableTextCell
                           value={manualRows[r.title].issues}
@@ -993,7 +894,6 @@ function DprSummary() {
                           onChange={(value) => updateManualRow(r.title, "issues", value)}
                         />
                       </td>
-
                       <td className="border border-black px-3 py-3 align-top whitespace-pre-line">
                         <EditableTextCell
                           value={manualRows[r.title].action}
@@ -1009,55 +909,43 @@ function DprSummary() {
           </CardContent>
         </Card>
 
-        {/* Grand Total */}
-        {/* <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Grand Total Summary</CardTitle>
+        {/* Morning / Afternoon Notes */}
+        <Card>
+          <CardHeader className="pb-2 print:pb-1">
+            <CardTitle className="text-base print:text-sm">Daily Notes</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-[hsl(var(--sidebar-background))] text-sidebar-foreground">
-                  <tr>
-                    <th className="px-3 py-2 text-left">Category</th>
-                    <th className="px-3 py-2 text-right">Total</th>
-                    <th className="px-3 py-2 text-right">Completed</th>
-                    <th className="px-3 py-2 text-right">In Progress</th>
-                    <th className="px-3 py-2 text-right">Delayed</th>
-                    <th className="px-3 py-2 text-right">% Done</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ticketBreakdown.map((r) => (
-                    <tr key={r.label} className="border-b border-border">
-                      <td className="px-3 py-2">{r.label}</td>
-                      <td className="px-3 py-2 text-right">{r.total}</td>
-                      <td className="px-3 py-2 text-right text-success">{r.completed}</td>
-                      <td className="px-3 py-2 text-right text-warning">{r.inProgress}</td>
-                      <td className="px-3 py-2 text-right text-destructive">{r.delayed}</td>
-                      <td className="px-3 py-2 text-right">
-                        {r.total ? Math.round((r.completed / r.total) * 100) : 0}%
-                      </td>
-                    </tr>
-                  ))}
-                  <tr className="bg-muted font-bold">
-                    <td className="px-3 py-2">GRAND TOTAL</td>
-                    <td className="px-3 py-2 text-right">{grandTotal.total}</td>
-                    <td className="px-3 py-2 text-right">{grandTotal.completed}</td>
-                    <td className="px-3 py-2 text-right">{grandTotal.inProgress}</td>
-                    <td className="px-3 py-2 text-right">{grandTotal.delayed}</td>
-                    <td className="px-3 py-2 text-right">
-                      {grandTotal.total
-                        ? Math.round((grandTotal.completed / grandTotal.total) * 100)
-                        : 0}
-                      %
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground">
+                Morning Notes
+              </Label>
+              <Textarea
+                value={notes.morning}
+                placeholder="Enter morning session notes…"
+                onChange={(e) => setNotes((n) => ({ ...n, morning: e.target.value }))}
+                className="min-h-32 resize-y text-sm print:hidden"
+              />
+              {/* Print-only view */}
+              <p className="hidden whitespace-pre-line print:block text-sm">
+                {notes.morning || "—"}
+              </p>
+            </div>
+            <div>
+              <Label className="mb-1 block text-xs uppercase tracking-wide text-muted-foreground">
+                Afternoon Notes
+              </Label>
+              <Textarea
+                value={notes.afternoon}
+                placeholder="Enter afternoon session notes…"
+                onChange={(e) => setNotes((n) => ({ ...n, afternoon: e.target.value }))}
+                className="min-h-32 resize-y text-sm print:hidden"
+              />
+              <p className="hidden whitespace-pre-line print:block text-sm">
+                {notes.afternoon || "—"}
+              </p>
             </div>
           </CardContent>
-        </Card> */}
+        </Card>
 
         <div className="grid gap-4 lg:grid-cols-2">
           <AbsenteesCard
@@ -1117,7 +1005,6 @@ function EditableActivityCell({
           {fields.map(({ field, label }) => (
             <label key={field} className="grid grid-cols-[1fr_120px] items-center gap-2">
               <span className="text-[11px] text-muted-foreground">{label}</span>
-
               <Input
                 type="text"
                 value={row[field]}
@@ -1128,7 +1015,6 @@ function EditableActivityCell({
             </label>
           ))}
         </div>
-
         <span className="hidden whitespace-pre-line print:block">{printValue || "—"}</span>
       </>
     );
@@ -1143,7 +1029,6 @@ function EditableActivityCell({
         onChange={(e) => onChange("notes", e.target.value)}
         className="min-h-24 min-w-[180px] resize-y text-xs print:hidden"
       />
-
       <span className="hidden whitespace-pre-line print:block">{printValue || "—"}</span>
     </>
   );
@@ -1450,7 +1335,6 @@ function RecorderSlot({
         .from("signatures")
         .upload(path, file, { upsert: true });
       if (error) throw error;
-      // Store the storage path; we generate signed URLs on read.
       await saveMut.mutateAsync(path);
     } catch (e) {
       toast.error((e as Error).message);
@@ -1463,14 +1347,24 @@ function RecorderSlot({
   useEffect(() => {
     let active = true;
     const raw = recorder?.signature_url;
-    if (!raw) { setSignedUrl(null); return; }
-    if (raw.startsWith("http")) { setSignedUrl(raw); return; }
-    supabase.storage.from("signatures").createSignedUrl(raw, 3600).then(({ data }) => {
-      if (active) setSignedUrl(data?.signedUrl ?? null);
-    });
-    return () => { active = false; };
+    if (!raw) {
+      setSignedUrl(null);
+      return;
+    }
+    if (raw.startsWith("http")) {
+      setSignedUrl(raw);
+      return;
+    }
+    supabase.storage
+      .from("signatures")
+      .createSignedUrl(raw, 3600)
+      .then(({ data }) => {
+        if (active) setSignedUrl(data?.signedUrl ?? null);
+      });
+    return () => {
+      active = false;
+    };
   }, [recorder?.signature_url]);
-
 
   return (
     <div className="rounded-md border border-border p-3">
