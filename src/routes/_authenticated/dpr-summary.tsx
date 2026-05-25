@@ -1155,8 +1155,8 @@ function RecorderSlot({
       <p className="mt-1 font-semibold">{recorder?.name ?? "—"}</p>
       <p className="text-xs text-muted-foreground">{recorder?.designation ?? ""}</p>
       <div className="mt-2 h-14 rounded border border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden">
-        {recorder?.signature_url ? (
-          <img src={recorder.signature_url} alt="signature" className="max-h-full object-contain" />
+        {signedUrl ? (
+          <img src={signedUrl} alt="signature" className="max-h-full object-contain" />
         ) : (
           <span className="text-[10px] text-muted-foreground">No signature</span>
         )}
